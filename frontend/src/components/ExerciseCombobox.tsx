@@ -26,6 +26,7 @@ const COMBO_GROUPS: Array<{ id: ComboGroupId; label: string }> = [
   { id: "core", label: "Core" },
   { id: "legs", label: "Legs" },
 ];
+const MAX_DROPDOWN_OPTIONS = 10;
 
 const PRIMARY_TO_COMBO_GROUP: Record<MuscleId, ComboGroupId> = {
   chest: "chest",
@@ -77,25 +78,24 @@ export default function ExerciseCombobox({
   // Group exercises by primary muscle and prioritize stronger query matches.
   const groupedExercises = useMemo(() => {
     const normalizedQuery = query.toLowerCase().trim();
+    const rankedExercises = EXERCISES.map((exercise) => ({
+      exercise,
+      rank: getMatchRank(exercise.name, normalizedQuery),
+    }))
+      .filter(({ rank }) => Number.isFinite(rank))
+      .sort((a, b) => {
+        if (a.rank !== b.rank) return a.rank - b.rank;
+        return a.exercise.name.localeCompare(b.exercise.name);
+      })
+      .slice(0, MAX_DROPDOWN_OPTIONS)
+      .map(({ exercise }) => exercise);
+
     const groups: Record<string, Exercise[]> = {};
-
-    for (const exercise of EXERCISES) {
-      const rank = getMatchRank(exercise.name, normalizedQuery);
-      if (!Number.isFinite(rank)) continue;
-
+    rankedExercises.forEach((exercise) => {
       const primaryId = getPrimaryMuscleGroup(exercise);
       if (!groups[primaryId]) groups[primaryId] = [];
       groups[primaryId].push(exercise);
-    }
-
-    for (const groupKey of Object.keys(groups)) {
-      groups[groupKey].sort((a, b) => {
-        const rankA = getMatchRank(a.name, normalizedQuery);
-        const rankB = getMatchRank(b.name, normalizedQuery);
-        if (rankA !== rankB) return rankA - rankB;
-        return a.name.localeCompare(b.name);
-      });
-    }
+    });
 
     const orderedGroups: Array<{
       id: string;

@@ -27,7 +27,6 @@ export default function EntryTable({
   const updateExercise = useWeekStore((s) => s.updateExercise);
 
   const dayList = week[activeDay] || [];
-  const exNames = EXERCISES.map((e) => e.name);
 
   // col indices: 0=exercise, 1=sets, 2=reps, 3=weight
   const cellRefs = useRef<Map<string, HTMLInputElement>>(new Map());
@@ -74,10 +73,10 @@ export default function EntryTable({
   };
 
   const [draft, setDraft] = useState({
-    name: exNames[0],
-    sets: "3",
-    reps: "8",
-    weight: "60",
+    name: "",
+    sets: "",
+    reps: "",
+    weight: "",
   });
   const [cellDrafts, setCellDrafts] = useState<Record<string, string>>({});
 
@@ -163,14 +162,22 @@ export default function EntryTable({
     onTransientInvalidCountChange?.(transientInvalidCount);
   }, [onTransientInvalidCountChange, transientInvalidCount]);
 
-  const draftSetsError = getRawFieldError("sets", draft.sets);
-  const draftRepsError = getRawFieldError("reps", draft.reps);
-  const draftWeightError = getRawFieldError("weight", draft.weight);
+  const draftSetsError =
+    draft.sets.trim() === "" ? "" : getRawFieldError("sets", draft.sets);
+  const draftRepsError =
+    draft.reps.trim() === "" ? "" : getRawFieldError("reps", draft.reps);
+  const draftWeightError =
+    draft.weight.trim() === ""
+      ? ""
+      : getRawFieldError("weight", draft.weight);
   const canAddDraft =
     !draftSetsError &&
     !draftRepsError &&
     !draftWeightError &&
-    Boolean(draft.name);
+    Boolean(draft.name.trim()) &&
+    draft.sets.trim() !== "" &&
+    draft.reps.trim() !== "" &&
+    draft.weight.trim() !== "";
 
   const handleAdd = () => {
     if (!canAddDraft) return;
@@ -449,6 +456,7 @@ export default function EntryTable({
           <input
             type="text"
             inputMode="numeric"
+            placeholder="Sets"
             value={draft.sets}
             className={draftSetsError ? "field-invalid" : ""}
             aria-invalid={Boolean(draftSetsError)}
@@ -461,6 +469,7 @@ export default function EntryTable({
           <input
             type="text"
             inputMode="numeric"
+            placeholder="Reps"
             value={draft.reps}
             className={draftRepsError ? "field-invalid" : ""}
             aria-invalid={Boolean(draftRepsError)}
@@ -473,6 +482,7 @@ export default function EntryTable({
           <input
             type="text"
             inputMode="decimal"
+            placeholder="Weight"
             value={draft.weight}
             className={draftWeightError ? "field-invalid" : ""}
             aria-invalid={Boolean(draftWeightError)}
