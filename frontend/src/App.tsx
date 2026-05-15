@@ -2,6 +2,7 @@ import { Routes, Route, useLocation, useNavigate } from 'react-router-dom';
 import Landing from './routes/Landing';
 import Logger from './routes/Logger';
 import Summary from './routes/Summary';
+import ChangelogDrawer from './components/ChangelogDrawer';
 
 function App() {
   const location = useLocation();
@@ -23,6 +24,8 @@ function App() {
         <Route path="/log" element={<Logger />} />
         <Route path="/summary" element={<Summary />} />
       </Routes>
+
+      <ChangelogDrawer />
 
       {/* Screen switcher chip — debug/nav aid */}
       {location.pathname !== '/' && (

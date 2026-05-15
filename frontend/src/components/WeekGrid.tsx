@@ -26,7 +26,13 @@ export default function WeekGrid() {
           .map(([m]) => m);
 
         return (
-          <button key={d.id} className={`day-card ${isActive ? 'on' : ''} ${list.length === 0 ? 'empty' : ''}`} onClick={() => setActiveDay(d.id)}>
+          <button
+            key={d.id}
+            className={`day-card ${isActive ? 'on' : ''} ${list.length === 0 ? 'empty' : ''}`}
+            onClick={() => setActiveDay(d.id)}
+            aria-pressed={isActive}
+            aria-label={`${d.label}day${list.length > 0 ? `, ${list.length} exercise${list.length !== 1 ? 's' : ''}` : ', rest day'}`}
+          >
             <div className="day-head">
               <span className="day-label">{d.label}</span>
               <span className="day-date mono">{d.date}</span>

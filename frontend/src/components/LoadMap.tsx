@@ -1,6 +1,6 @@
 import { MUSCLE_GROUPS } from '../lib/exercises';
 import type { MuscleId } from '../lib/exercises';
-import { scoreToColor } from '../lib/scoring';
+import { scoreLabel, scoreToColor } from '../lib/scoring';
 
 export default function LoadMap({ loads }: { loads: Record<MuscleId, number> }) {
   const sortedLoads = [...MUSCLE_GROUPS]
@@ -17,7 +17,7 @@ export default function LoadMap({ loads }: { loads: Record<MuscleId, number> }) 
         {sortedLoads.map((m) => {
           const color = scoreToColor(m.score);
           return (
-            <div key={m.id} className="load-row">
+            <div key={m.id} className="load-row" title={`${m.label}: ${m.score} – ${scoreLabel(m.score)}`}>
               <span className="load-label">{m.label}</span>
               <div className="load-bar">
                 <div className="load-fill" style={{ width: m.score + '%', background: color }} />

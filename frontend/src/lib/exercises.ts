@@ -1,7 +1,7 @@
 // Domain types and data — ported verbatim from prototype data.js
 
 export type MuscleId =
-  | 'chest' | 'back' | 'shoulders' | 'biceps' | 'triceps'
+  | 'chest' | 'back' | 'shoulders' | 'biceps' | 'triceps' | 'forearms'
   | 'core' | 'quads' | 'hamstrings' | 'glutes' | 'calves';
 
 export interface MuscleGroup {
@@ -38,6 +38,7 @@ export const MUSCLE_GROUPS: MuscleGroup[] = [
   { id: 'shoulders',  label: 'Shoulders' },
   { id: 'biceps',     label: 'Biceps' },
   { id: 'triceps',    label: 'Triceps' },
+  { id: 'forearms',   label: 'Forearms' },
   { id: 'core',       label: 'Core' },
   { id: 'quads',      label: 'Quads' },
   { id: 'hamstrings', label: 'Hamstrings' },
@@ -57,8 +58,11 @@ export const EXERCISES: Exercise[] = [
   { name: 'Lat Pulldown',       primary: { back: 0.9, biceps: 0.5 } },
   { name: 'Barbell Row',        primary: { back: 1.0, biceps: 0.5 },   secondary: { core: 0.3 } },
   { name: 'Seated Cable Row',   primary: { back: 0.8, biceps: 0.4 } },
-  { name: 'Dumbbell Curl',      primary: { biceps: 1.0 } },
-  { name: 'Hammer Curl',        primary: { biceps: 0.9 } },
+  { name: 'Dumbbell Curl',      primary: { biceps: 1.0 }, secondary: { forearms: 0.4 } },
+  { name: 'Hammer Curl',        primary: { biceps: 0.9, forearms: 0.6 } },
+  { name: 'Wrist Curl',         primary: { forearms: 1.0 } },
+  { name: 'Reverse Curl',       primary: { forearms: 0.9, biceps: 0.4 } },
+  { name: 'Farmer Carry',       primary: { forearms: 1.0 }, secondary: { core: 0.5, back: 0.3 } },
   { name: 'Tricep Pushdown',    primary: { triceps: 1.0 } },
   { name: 'Skull Crusher',      primary: { triceps: 1.0 } },
   { name: 'Lateral Raise',      primary: { shoulders: 0.9 } },

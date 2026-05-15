@@ -1,23 +1,13 @@
-import { useEffect, useState } from 'react';
 import type { MuscleId } from '../lib/exercises';
-import { generateInsight } from '../lib/insight';
 import type { InsightResult } from '../lib/insight';
 
-export default function InsightCard({ loads }: { loads: Record<MuscleId, number> }) {
-  const [insight, setInsight] = useState<InsightResult | null>(null);
-  const [loading, setLoading] = useState(true);
+interface InsightCardProps {
+  loads: Record<MuscleId, number>;
+  status: 'idle' | 'loading' | 'success' | 'error';
+  insight: InsightResult | null;
+}
 
-  const loadInsight = async () => {
-    setLoading(true);
-    const result = await generateInsight(loads);
-    setInsight(result);
-    setLoading(false);
-  };
-
-  useEffect(() => {
-    loadInsight();
-  }, [loads]);
-
+export default function InsightCard({ loads, status, insight }: InsightCardProps) {
   const over = Object.values(loads).filter((s) => s >= 70).length;
   const balanced = Object.values(loads).filter((s) => s >= 30 && s < 70).length;
   const under = Object.values(loads).filter((s) => s < 30).length;
@@ -36,23 +26,29 @@ export default function InsightCard({ loads }: { loads: Record<MuscleId, number>
             <div className="g-sub mono">analysis · vertex ai · 1.2s</div>
           </div>
         </div>
-        <button className="ico-mini" title="regenerate" onClick={loadInsight}>
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M3 12a9 9 0 0 1 15-6.7L21 8M21 3v5h-5M21 12a9 9 0 0 1-15 6.7L3 16M3 21v-5h5" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/></svg>
-        </button>
       </div>
 
-      {loading ? (
-        <p className="insight-body dim">Analyzing your week...</p>
-      ) : (
+      {status === 'loading' ? (
+        <div style={{ padding: '2px 0 6px' }}>
+          <div className="skeleton-line" style={{ width: '100%', height: 14, marginBottom: 10 }} />
+          <div className="skeleton-line" style={{ width: '92%', height: 14, marginBottom: 10 }} />
+          <div className="skeleton-line" style={{ width: '98%', height: 14, marginBottom: 10 }} />
+          <div className="skeleton-line" style={{ width: '85%', height: 14, marginBottom: 20 }} />
+          <div className="insight-tags" style={{ opacity: 0.5 }}>
+            <div className="skeleton-line" style={{ width: 80, height: 26, borderRadius: 13 }} />
+            <div className="skeleton-line" style={{ width: 90, height: 26, borderRadius: 13 }} />
+          </div>
+        </div>
+      ) : status === 'success' && insight ? (
         <>
-          <p className="insight-body">{insight?.summary}</p>
+          <p className="insight-body">{insight.summary}</p>
           <div className="insight-tags">
             {over > 0 && <span className="tag red">{over} overtrained</span>}
             {balanced > 0 && <span className="tag yel">{balanced} balanced</span>}
             {under > 0 && <span className="tag grn">{under} undertrained</span>}
           </div>
         </>
-      )}
+      ) : null}
     </div>
   );
 }
