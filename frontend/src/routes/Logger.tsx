@@ -129,8 +129,8 @@ export default function Logger() {
           ) : null}
 
           <button
-            className="btn ghost wide"
-            style={{ color: "var(--red)", marginTop: "8px" }}
+            className="btn ghost danger"
+            style={{ marginTop: "8px" }}
             onClick={resetWeek}
           >
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
