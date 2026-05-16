@@ -1,4 +1,6 @@
 import 'dotenv/config';
+import { fileURLToPath } from 'url';
+import { dirname, join } from 'path';
 import express from 'express';
 import cors from 'cors';
 import OpenAI from 'openai';
@@ -204,6 +206,11 @@ app.post('/api/program', async (req, res) => {
     res.status(500).json({ error: msg });
   }
 });
+
+const __dirname = dirname(fileURLToPath(import.meta.url));
+const frontendDist = join(__dirname, '../frontend/dist');
+app.use(express.static(frontendDist));
+app.get('*', (_req, res) => res.sendFile(join(frontendDist, 'index.html')));
 
 const PORT = Number(process.env.PORT ?? 3001);
 app.listen(PORT, () => {

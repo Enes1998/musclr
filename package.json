@@ -5,7 +5,10 @@
   "scripts": {
     "dev": "concurrently -n api,ui -c cyan,magenta \"npm run dev --prefix api\" \"npm run dev --prefix frontend\"",
     "dev:api": "npm run dev --prefix api",
-    "dev:ui": "npm run dev --prefix frontend"
+    "dev:ui": "npm run dev --prefix frontend",
+    "build": "npm run build --prefix frontend",
+    "gcp-build": "npm run build --prefix frontend",
+    "start": "node --import tsx/esm api/server.ts"
   },
   "devDependencies": {
     "concurrently": "^9.1.2"
