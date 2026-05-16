@@ -1,7 +1,8 @@
+import 'dotenv/config';
 import express from 'express';
 import cors from 'cors';
 import OpenAI from 'openai';
-import { GoogleGenerativeAI } from '@google/generative-ai';
+import { GoogleGenAI } from '@google/genai';
 
 // ── Types (mirror frontend/src/lib/exercises.ts) ─────────────────────────────
 
@@ -35,12 +36,16 @@ const lmClient = new OpenAI({
 
 async function callAI(prompt: string): Promise<string> {
   if (process.env.AI_PROVIDER === 'gemini') {
-    const apiKey = process.env.GEMINI_API_KEY;
-    if (!apiKey) throw new Error('GEMINI_API_KEY is not set');
-    const ai = new GoogleGenerativeAI(apiKey);
-    const model = ai.getGenerativeModel({ model: process.env.GEMINI_MODEL ?? 'gemma-3-4b-it' });
-    const result = await model.generateContent(prompt);
-    return result.response.text();
+    const ai = new GoogleGenAI({
+      vertexai: true,
+      project: process.env.GOOGLE_CLOUD_PROJECT,
+      location: process.env.GOOGLE_CLOUD_LOCATION ?? 'us-central1',
+    });
+    const result = await ai.models.generateContent({
+      model: process.env.GEMINI_MODEL ?? 'gemini-2.5-flash',
+      contents: prompt,
+    });
+    return result.text ?? '';
   }
   // LM Studio (default)
   const completion = await lmClient.chat.completions.create({
