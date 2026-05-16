@@ -17,7 +17,7 @@ import type { SavedProfile } from "../lib/profiles";
 import AppBar from "../components/AppBar";
 import Body3D from "../components/Body3D";
 import InsightCard from "../components/InsightCard";
-import NextWorkoutCard from "../components/NextWorkoutCard";
+import ProgramCard from "../components/ProgramCard";
 
 export default function Summary() {
   const navigate = useNavigate();
@@ -28,6 +28,7 @@ export default function Summary() {
     "idle" | "loading" | "success" | "error"
   >("idle");
   const [insightData, setInsightData] = useState<InsightResult | null>(null);
+  const [insightError, setInsightError] = useState<string | null>(null);
 
   // profiles
   const [profiles, setProfiles] = useState<SavedProfile[]>(() => listProfiles());
@@ -88,30 +89,22 @@ export default function Summary() {
   const weekTotals = getTrustedWeekTotals(week);
   const canGenerateInsights = !weekValidation.hasInvalidRows;
 
-  const handleGenerate = async (useSampleFallback = false) => {
+  const handleGenerate = async () => {
     if (!canGenerateInsights) return;
-
     setInsightStatus("loading");
+    setInsightError(null);
     try {
-      if (useSampleFallback) {
-        const res = await generateInsight(loads);
-        setInsightData(res);
-        setInsightStatus("success");
-        return;
-      }
-
-      // Simulate network delay
-      await new Promise((r) => setTimeout(r, 1200));
-      // Simulate ~30% failure rate
-      if (Math.random() < 0.3) throw new Error("Network timeout");
-
-      const res = await generateInsight(loads);
+      const res = await generateInsight(loads, week);
       setInsightData(res);
       setInsightStatus("success");
-    } catch {
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      console.error('[insight error]', msg);
+      setInsightError(msg);
       setInsightStatus("error");
     }
   };
+
   const sortedLoads = [...MUSCLE_GROUPS]
     .map((m) => ({ ...m, score: loads[m.id] }))
     .sort((a, b) => b.score - a.score);
@@ -396,7 +389,7 @@ export default function Summary() {
                 </p>
                 <button
                   className="btn primary wide"
-                  onClick={() => handleGenerate(false)}
+                  onClick={() => handleGenerate()}
                   disabled={!canGenerateInsights}
                   title={
                     !canGenerateInsights
@@ -450,17 +443,10 @@ export default function Summary() {
                 >
                   <button
                     className="btn primary wide"
-                    onClick={() => handleGenerate(false)}
+                    onClick={() => handleGenerate()}
                     disabled={!canGenerateInsights}
                   >
                     Try again
-                  </button>
-                  <button
-                    className="btn ghost wide"
-                    onClick={() => handleGenerate(true)}
-                    disabled={!canGenerateInsights}
-                  >
-                    Use sample insight
                   </button>
                 </div>
               </div>
@@ -473,12 +459,20 @@ export default function Summary() {
                   status={insightStatus}
                   insight={insightData}
                 />
-                <NextWorkoutCard
-                  loads={loads}
+                <ProgramCard
                   status={insightStatus}
-                  insight={insightData}
+                  program={insightData}
+                  error={insightError}
                 />
               </>
+            )}
+
+            {insightStatus === "error" && (
+              <div className="insight-card" style={{ color: 'var(--red, #e05)' }}>
+                <p className="mono" style={{ margin: 0, fontSize: 13 }}>
+                  {insightError ?? 'LM Studio request failed — check that the server is running and a model is loaded.'}
+                </p>
+              </div>
             )}
 
             <div className="side-card profile-card">
@@ -561,7 +555,7 @@ export default function Summary() {
 
             <div className="footnote mono dim">
               Scores = sets × reps × load, normalized 0–100.{" "}
-              <span className="hl">Vertex AI · Gemini 2.5 Pro</span>.
+              <span className="hl">Vertex AI · Gemini 2.5 Flash</span>.
             </div>
           </aside>
         </div>

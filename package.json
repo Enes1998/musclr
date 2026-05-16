@@ -1,0 +1,12 @@
+{
+  "name": "musclr-root",
+  "private": true,
+  "scripts": {
+    "dev": "concurrently -n api,ui -c cyan,magenta \"npm run dev --prefix api\" \"npm run dev --prefix frontend\"",
+    "dev:api": "npm run dev --prefix api",
+    "dev:ui": "npm run dev --prefix frontend"
+  },
+  "devDependencies": {
+    "concurrently": "^9.1.2"
+  }
+}
