@@ -1,16 +1,19 @@
 {
-  "name": "musclr-root",
+  "name": "musclr",
   "private": true,
-  "workspaces": ["api", "frontend"],
+  "packageManager": "pnpm@10.33.2",
+  "engines": {
+    "node": ">=20"
+  },
   "scripts": {
-    "dev": "concurrently -n api,ui -c cyan,magenta \"npm run dev --prefix api\" \"npm run dev --prefix frontend\"",
-    "dev:api": "npm run dev --prefix api",
-    "dev:ui": "npm run dev --prefix frontend",
-    "build": "npm run build --prefix frontend",
-    "gcp-build": "npm run build --prefix frontend",
-    "start": "node --import tsx/esm api/server.ts"
+    "build": "turbo run build",
+    "test": "turbo run test",
+    "lint": "turbo run lint",
+    "typecheck": "turbo run typecheck",
+    "dev": "turbo run dev"
   },
   "devDependencies": {
-    "concurrently": "^9.1.2"
+    "turbo": "^2.5.0",
+    "typescript": "~6.0.0"
   }
 }
