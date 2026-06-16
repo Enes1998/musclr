@@ -1,8 +1,24 @@
 import { Hono } from 'hono';
 import { foodFromUsda, type Food, type UsdaFood, type NutrientVector, type NutrientKey } from '@musclr/core';
 import { USDA_API_KEY, OFF_USER_AGENT } from '../env';
+import { mockNutritionAdvice } from '../ai/nutritionAdvisor';
 
 export const nutrition = new Hono();
+
+// AI nutrition advice from the day's nutrient gaps (deterministic mock fallback).
+nutrition.post('/advice', async (c) => {
+  const body = (await c.req.json().catch(() => ({}))) as {
+    lacking?: NutrientKey[];
+    overdone?: NutrientKey[];
+    unknown?: NutrientKey[];
+  };
+  const advice = mockNutritionAdvice({
+    lacking: body.lacking ?? [],
+    overdone: body.overdone ?? [],
+    unknown: body.unknown ?? [],
+  });
+  return c.json({ advice, meta: { provider: 'mock' } });
+});
 
 // USDA FoodData Central food search (primary nutrient source, CC0).
 nutrition.get('/search', async (c) => {

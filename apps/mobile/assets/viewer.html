@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
+    <style>
+      html, body { margin: 0; height: 100%; background: #0a0a0c; color: #f5f5f7;
+        font-family: -apple-system, system-ui, sans-serif; }
+      #app { padding: 16px; box-sizing: border-box; }
+      .row { display: flex; align-items: center; gap: 10px; margin: 6px 0; }
+      .label { width: 96px; font-size: 12px; color: #8a8a95; }
+      .track { flex: 1; height: 8px; background: #24242e; border-radius: 999px; overflow: hidden; }
+      .fill { height: 100%; border-radius: 999px; transition: width .25s ease; }
+      .val { width: 28px; text-align: right; font-size: 11px; color: #8a8a95;
+        font-family: ui-monospace, monospace; }
+      h2 { font-size: 13px; color: #f97316; letter-spacing: .12em; text-transform: uppercase; margin: 4px 0 12px; }
+    </style>
+  </head>
+  <body>
+    <div id="app"><h2>Muscle load</h2><div id="bars"></div></div>
+    <script>
+      // green -> yellow -> red, matching @musclr/core scoring.scoreToColor anchors.
+      function scoreToColor(s) {
+        s = Math.max(0, Math.min(100, s));
+        var lerp = function (a, b, t) { return Math.round(a + (b - a) * t); };
+        var hex = function (r, g, b) { return '#' + [r, g, b].map(function (x) { return x.toString(16).padStart(2, '0'); }).join(''); };
+        var G = [76, 175, 80], Y = [255, 193, 7], R = [244, 67, 54];
+        if (s < 50) { var t = s / 50; return hex(lerp(G[0], Y[0], t), lerp(G[1], Y[1], t), lerp(G[2], Y[2], t)); }
+        var t2 = (s - 50) / 50; return hex(lerp(Y[0], R[0], t2), lerp(Y[1], R[1], t2), lerp(Y[2], R[2], t2));
+      }
+      var LABELS = {
+        chest: 'Chest', back: 'Back', shoulders: 'Shoulders', biceps: 'Biceps', triceps: 'Triceps',
+        forearms: 'Forearms', core: 'Core', quads: 'Quads', hamstrings: 'Hamstrings', glutes: 'Glutes', calves: 'Calves'
+      };
+      var ORDER = Object.keys(LABELS);
+      function render(scores) {
+        var html = '';
+        ORDER.forEach(function (id) {
+          var v = Math.round(scores[id] || 0);
+          html += '<div class="row"><span class="label">' + LABELS[id] + '</span>' +
+            '<span class="track"><span class="fill" style="width:' + v + '%;background:' + scoreToColor(v) + '"></span></span>' +
+            '<span class="val">' + v + '</span></div>';
+        });
+        document.getElementById('bars').innerHTML = html;
+      }
+      // Public bridge API the native side injects against.
+      window.__viewer = { setScores: render };
+      render({});
+      // Tell the RN host we're ready to receive scores.
+      function ready() { if (window.ReactNativeWebView) window.ReactNativeWebView.postMessage(JSON.stringify({ type: 'ready' })); }
+      if (document.readyState === 'complete') ready(); else window.addEventListener('load', ready);
+    </script>
+  </body>
+</html>

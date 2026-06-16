@@ -1,0 +1,25 @@
+{
+  "expo": {
+    "name": "musclr",
+    "slug": "musclr",
+    "scheme": "musclr",
+    "version": "0.0.1",
+    "orientation": "portrait",
+    "userInterfaceStyle": "dark",
+    "newArchEnabled": true,
+    "backgroundColor": "#0a0a0c",
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.musclr.app"
+    },
+    "android": {
+      "package": "com.musclr.app"
+    },
+    "web": {
+      "bundler": "metro",
+      "output": "single"
+    },
+    "plugins": ["expo-router"],
+    "assetBundlePatterns": ["assets/**"]
+  }
+}

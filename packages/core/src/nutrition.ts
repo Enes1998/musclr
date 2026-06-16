@@ -368,6 +368,34 @@ export function foodFromUsda(f: UsdaFood): Food {
   };
 }
 
+/** Whole-food sources rich in each nutrient — grounds the AI's nutrition suggestions. */
+export const FOODS_RICH_IN: Partial<Record<NutrientKey, string[]>> = {
+  protein_g: ['chicken breast', 'greek yogurt', 'eggs', 'lentils', 'tofu'],
+  carbs_g: ['oats', 'rice', 'potatoes', 'fruit'],
+  fat_g: ['olive oil', 'avocado', 'nuts'],
+  fiber_g: ['oats', 'beans', 'berries', 'broccoli'],
+  vitamin_a_ug: ['sweet potato', 'carrots', 'spinach'],
+  vitamin_c_mg: ['oranges', 'bell peppers', 'strawberries', 'broccoli'],
+  vitamin_d_ug: ['salmon', 'fortified milk', 'egg yolks'],
+  vitamin_e_mg: ['almonds', 'sunflower seeds', 'avocado'],
+  vitamin_k_ug: ['kale', 'spinach', 'broccoli'],
+  thiamin_mg: ['whole grains', 'pork', 'legumes'],
+  riboflavin_mg: ['dairy', 'eggs', 'almonds'],
+  niacin_mg: ['chicken', 'tuna', 'peanuts'],
+  vitamin_b6_mg: ['chickpeas', 'salmon', 'potatoes'],
+  folate_ug: ['lentils', 'spinach', 'asparagus'],
+  vitamin_b12_ug: ['beef', 'salmon', 'dairy', 'fortified cereal'],
+  calcium_mg: ['dairy', 'tofu', 'sardines', 'fortified plant milk'],
+  iron_mg: ['red meat', 'lentils', 'spinach', 'fortified cereal'],
+  magnesium_mg: ['pumpkin seeds', 'almonds', 'black beans', 'spinach'],
+  zinc_mg: ['beef', 'oysters', 'pumpkin seeds', 'chickpeas'],
+  potassium_mg: ['banana', 'potato', 'beans', 'yogurt'],
+  selenium_ug: ['brazil nuts', 'tuna', 'eggs'],
+  copper_ug: ['shellfish', 'nuts', 'seeds'],
+  manganese_mg: ['whole grains', 'nuts', 'leafy greens'],
+  phosphorus_mg: ['dairy', 'meat', 'fish', 'legumes'],
+};
+
 /** Convenience: nutrients that are lacking / overdone / unknown, for the AI prompt + UI. */
 export function summarizeStatus(statuses: NutrientStatus[]): {
   low: NutrientKey[];

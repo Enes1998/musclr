@@ -14,7 +14,7 @@ import {
   type Sex,
   type Goal,
 } from '@musclr/core';
-import { searchFoods } from '../../lib/api';
+import { searchFoods, requestNutritionAdvice, type NutritionAdviceResult } from '../../lib/api';
 import { useNutritionStore } from '../../lib/nutritionStore';
 import { useHasHydrated } from '../../lib/store';
 
@@ -55,6 +55,9 @@ export default function NutritionPage() {
   const [searching, setSearching] = useState(false);
   const [searchError, setSearchError] = useState<string | null>(null);
 
+  const [advice, setAdvice] = useState<NutritionAdviceResult | null>(null);
+  const [adviceLoading, setAdviceLoading] = useState(false);
+
   const profile: NutritionProfile = { sex, age: 30, heightCm: 180, weightKg, activity: 'moderate', goal };
   const targets = useMemo(() => deriveTargets(profile), [sex, weightKg, goal]);
 
@@ -68,6 +71,22 @@ export default function NutritionPage() {
     statuses.forEach((s) => (m[s.key] = s));
     return m;
   }, [statuses]);
+
+  async function getAdvice() {
+    setAdviceLoading(true);
+    try {
+      const gaps = {
+        lacking: statuses.filter((s) => s.flag === 'low').map((s) => s.key),
+        overdone: statuses.filter((s) => s.flag === 'high' || s.flag === 'over_ul').map((s) => s.key),
+        unknown: statuses.filter((s) => s.flag === 'unknown').map((s) => s.key),
+      };
+      setAdvice(await requestNutritionAdvice(gaps));
+    } catch {
+      setAdvice(null);
+    } finally {
+      setAdviceLoading(false);
+    }
+  }
 
   async function runSearch() {
     if (!query.trim()) return;
@@ -223,6 +242,40 @@ export default function NutritionPage() {
       <p className="mt-4 font-mono text-xs text-ink-3">
         green = on target · yellow = low (&lt;70% RDA) · red = over limit · grey = no data (not a deficiency)
       </p>
+
+      {/* AI nutrition advice */}
+      <section className="mt-8 rounded-2xl border border-line bg-surface p-6">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <h2 className="font-display text-lg font-semibold">AI nutrition suggestion</h2>
+          <button
+            onClick={getAdvice}
+            disabled={adviceLoading || items.length === 0}
+            className="rounded-md bg-accent px-3 py-1.5 text-sm font-medium text-bg disabled:opacity-50"
+          >
+            {adviceLoading ? 'Analyzing…' : 'Get suggestion'}
+          </button>
+        </div>
+        <p className="mt-2 text-sm text-ink-2">
+          Deterministic flags decide what&apos;s lacking or overdone; the coach explains and
+          recommends foods. {items.length === 0 ? 'Log a food first.' : ''}
+        </p>
+        {advice && (
+          <div className="mt-4 rounded-xl border border-line bg-bg-2 p-4">
+            <p className="font-mono text-[10px] text-ink-3">{advice.meta.provider}</p>
+            <p className="mt-1 text-sm text-ink">{advice.advice.summary}</p>
+            <ul className="mt-3 space-y-2">
+              {advice.advice.focus.map((f, i) => (
+                <li key={i} className="text-sm">
+                  <span style={{ color: f.direction === 'increase' ? '#4caf50' : '#f44336' }}>
+                    {f.direction === 'increase' ? '↑' : '↓'} {f.nutrient}
+                  </span>
+                  {f.foods.length > 0 && <span className="text-ink-2"> — {f.foods.join(', ')}</span>}
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+      </section>
     </main>
   );
 }
