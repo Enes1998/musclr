@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import {
   deriveTargets,
   computeDailyStatus,
@@ -18,6 +18,7 @@ import { searchFoods, requestNutritionAdvice, lookupBarcode, type NutritionAdvic
 import { useNutritionStore } from '../../lib/nutritionStore';
 import { useHasHydrated } from '../../lib/store';
 import { useSettingsStore, toAiSettings } from '../../lib/settingsStore';
+import { useRecoveryStore } from '../../lib/recoveryStore';
 import { BarcodeScanner } from '../../components/BarcodeScanner';
 
 const LABELS: Record<NutrientKey, string> = {
@@ -48,9 +49,16 @@ export default function NutritionPage() {
   const hydrated = useHasHydrated();
   const { items, add, remove, clear } = useNutritionStore();
   const settings = useSettingsStore();
+  const bodyWeightKg = useRecoveryStore((s) => s.bodyWeightKg);
+  const setRecovery = useRecoveryStore((s) => s.set);
 
   const [sex, setSex] = useState<Sex>('male');
   const [weightKg, setWeightKg] = useState(80);
+
+  // Bodyweight is shared with the recovery store (and, later, wearables).
+  useEffect(() => {
+    if (typeof bodyWeightKg === 'number' && bodyWeightKg > 0) setWeightKg(bodyWeightKg);
+  }, [bodyWeightKg]);
   const [goal, setGoal] = useState<Goal>('maintain');
 
   const [query, setQuery] = useState('');
@@ -150,7 +158,11 @@ export default function NutritionPage() {
           <input
             type="number"
             value={weightKg}
-            onChange={(e) => setWeightKg(Number(e.target.value) || 0)}
+            onChange={(e) => {
+              const v = Number(e.target.value) || 0;
+              setWeightKg(v);
+              if (v > 0) setRecovery({ bodyWeightKg: v });
+            }}
             className="w-24 rounded bg-surface-2 px-2 py-1"
           />
         </label>

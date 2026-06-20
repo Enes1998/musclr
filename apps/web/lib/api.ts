@@ -74,6 +74,7 @@ export async function requestPlan(body: {
   goal: TrainingGoal;
   loads: Partial<Record<MuscleId, number>>;
   nutrition?: { lacking: string[]; overdone: string[]; unknown: string[] };
+  readiness?: number;
   ai?: AiSettings;
 }): Promise<PlanResponse> {
   const { ai, ...rest } = body;

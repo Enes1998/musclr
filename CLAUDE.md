@@ -87,6 +87,7 @@ This table is the source of truth. Both columns must be ✅ before any feature i
 | i18n (en/es foundation) | ✅ | ✅ |
 | Units (kg/lb) + RIR logging | ✅ `/log` | ✅ Log tab |
 | Accounts + multi-device sync (Supabase) | ✅ `/settings` | ✅ Settings tab |
+| Recovery-aware coaching (readiness + bodyweight) | ✅ `/summary` | ✅ Summary tab |
 
 When you add a new feature, add a row. Both cells must be ✅ before you're done.
 

@@ -2,6 +2,7 @@ import { Hono } from 'hono';
 import { cors } from 'hono/cors';
 import { generatePlan, PlanError, type GenerateInput, type PlanProvider } from './ai/generatePlan';
 import { nutrition } from './routes/nutrition';
+import { health } from './routes/health';
 import { antiAbuse } from './middleware/antiAbuse';
 import { ALLOWED_ORIGINS } from './env';
 import type { MuscleId, TrainingGoal } from '@musclr/core';
@@ -23,6 +24,7 @@ app.use('/api/ai', antiAbuse());
 app.use('/api/nutrition/advice', antiAbuse());
 
 app.route('/api/nutrition', nutrition);
+app.route('/api/health', health);
 
 app.post('/api/ai', async (c) => {
   const body = (await c.req.json().catch(() => null)) as Record<string, unknown> | null;

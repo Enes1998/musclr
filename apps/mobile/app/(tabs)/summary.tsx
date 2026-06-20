@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { ScrollView, View, Text, Pressable } from 'react-native';
+import { ScrollView, View, Text, Pressable, TextInput } from 'react-native';
 import {
   MUSCLE_GROUPS,
   computeMuscleLoad,
@@ -12,6 +12,7 @@ import {
 } from '@musclr/core';
 import { useWeekStore } from '../../lib/store';
 import { useSettingsStore, toAiSettings } from '../../lib/settingsStore';
+import { useRecoveryStore, readinessFrom } from '../../lib/recoveryStore';
 import { MuscleHeatmap } from '../../components/MuscleHeatmap';
 import { requestPlan, type PlanResponse } from '../../lib/api';
 
@@ -20,6 +21,7 @@ const GOALS: TrainingGoal[] = ['hypertrophy', 'strength', 'endurance', 'general'
 export default function SummaryScreen() {
   const week = useWeekStore((s) => s.week);
   const settings = useSettingsStore();
+  const recovery = useRecoveryStore();
   const [goal, setGoal] = useState<TrainingGoal>('hypertrophy');
   const [plan, setPlan] = useState<PlanResponse | null>(null);
   const [loading, setLoading] = useState(false);
@@ -35,7 +37,7 @@ export default function SummaryScreen() {
     setLoading(true);
     setError(null);
     try {
-      setPlan(await requestPlan({ goal, loads: loads as Partial<Record<MuscleId, number>>, ai: toAiSettings(settings) }));
+      setPlan(await requestPlan({ goal, loads: loads as Partial<Record<MuscleId, number>>, readiness: readinessFrom(recovery), ai: toAiSettings(settings) }));
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e));
     } finally {
@@ -80,6 +82,39 @@ export default function SummaryScreen() {
             </Pressable>
           ))}
         </View>
+        <View className="mt-3 rounded-xl border border-line bg-bg-2 p-3">
+          <Text className="font-mono text-[10px] uppercase text-ink-3">Today's recovery (optional)</Text>
+          <View className="mt-2 flex-row gap-3">
+            <View>
+              <Text className="text-[10px] text-ink-3">Recovery 0–100</Text>
+              <TextInput
+                value={recovery.recovery0to100 == null ? '' : String(recovery.recovery0to100)}
+                onChangeText={(t) => recovery.set({ recovery0to100: t === '' ? undefined : Number(t) })}
+                keyboardType="numeric"
+                placeholder="72"
+                placeholderTextColor="#52525c"
+                className="mt-1 w-20 rounded bg-surface-2 px-2 py-1 text-center text-ink"
+              />
+            </View>
+            <View>
+              <Text className="text-[10px] text-ink-3">Bodyweight (kg)</Text>
+              <TextInput
+                value={recovery.bodyWeightKg == null ? '' : String(recovery.bodyWeightKg)}
+                onChangeText={(t) => recovery.set({ bodyWeightKg: t === '' ? undefined : Number(t) })}
+                keyboardType="numeric"
+                placeholder="—"
+                placeholderTextColor="#52525c"
+                className="mt-1 w-20 rounded bg-surface-2 px-2 py-1 text-center text-ink"
+              />
+            </View>
+          </View>
+          {readinessFrom(recovery) != null && (
+            <Text className="mt-2 text-[10px] text-ink-3">
+              readiness {readinessFrom(recovery)}/100 — a bounded nudge only; never changes your scores.
+            </Text>
+          )}
+        </View>
+
         <Pressable onPress={generate} disabled={loading} className="mt-4 self-start rounded-md bg-accent px-4 py-2">
           <Text className="font-medium text-bg">{loading ? 'Generating…' : 'Generate plan'}</Text>
         </Pressable>

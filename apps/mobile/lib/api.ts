@@ -34,6 +34,7 @@ export interface PlanResponse {
 export async function requestPlan(body: {
   goal: TrainingGoal;
   loads: Partial<Record<MuscleId, number>>;
+  readiness?: number;
   ai?: AiSettings;
 }): Promise<PlanResponse> {
   const { ai, ...rest } = body;

@@ -15,6 +15,7 @@ import {
 } from '@musclr/core';
 import { useWeekStore, useHasHydrated } from '../../lib/store';
 import { useSettingsStore, toAiSettings } from '../../lib/settingsStore';
+import { useRecoveryStore, readinessFrom } from '../../lib/recoveryStore';
 import { MuscleViewer } from '../../components/MuscleViewer';
 import { requestPlan, type PlanResponse } from '../../lib/api';
 
@@ -24,6 +25,7 @@ export default function SummaryPage() {
   const hydrated = useHasHydrated();
   const week = useWeekStore((s) => s.week);
   const settings = useSettingsStore();
+  const recovery = useRecoveryStore();
   const [goal, setGoal] = useState<TrainingGoal>('hypertrophy');
   const [showPrompt, setShowPrompt] = useState(false);
   const [plan, setPlan] = useState<PlanResponse | null>(null);
@@ -37,6 +39,7 @@ export default function SummaryPage() {
       const res = await requestPlan({
         goal,
         loads: loads as Partial<Record<MuscleId, number>>,
+        readiness: readinessFrom(recovery),
         ai: toAiSettings(settings),
       });
       setPlan(res);
@@ -131,6 +134,46 @@ export default function SummaryPage() {
           </a>{' '}
           (built-in works with no key). Below is the exact grounded prompt that is sent.
         </p>
+        <div className="mt-4 rounded-xl border border-line bg-bg-2 p-4">
+          <p className="font-mono text-xs uppercase tracking-wider text-ink-3">Today's recovery (optional)</p>
+          <div className="mt-2 flex flex-wrap items-end gap-4 text-sm">
+            <label className="flex flex-col gap-1">
+              <span className="text-xs text-ink-3">Recovery score 0–100</span>
+              <input
+                type="number"
+                value={recovery.recovery0to100 ?? ''}
+                onChange={(e) =>
+                  recovery.set({ recovery0to100: e.target.value === '' ? undefined : Number(e.target.value) })
+                }
+                placeholder="e.g. 72"
+                className="w-28 rounded bg-surface-2 px-2 py-1"
+              />
+            </label>
+            <label className="flex flex-col gap-1">
+              <span className="text-xs text-ink-3">Bodyweight (kg)</span>
+              <input
+                type="number"
+                value={recovery.bodyWeightKg ?? ''}
+                onChange={(e) =>
+                  recovery.set({ bodyWeightKg: e.target.value === '' ? undefined : Number(e.target.value) })
+                }
+                placeholder="optional"
+                className="w-28 rounded bg-surface-2 px-2 py-1"
+              />
+            </label>
+            {readinessFrom(recovery) != null && (
+              <p className="font-mono text-xs text-ink-3">
+                readiness {readinessFrom(recovery)}/100 — a bounded nudge to the 48–72 h recovery window
+                (evidence: HRV-guided training, endurance-biased).
+              </p>
+            )}
+          </div>
+          <p className="mt-2 text-xs text-ink-3">
+            From a wearable later (Apple Health / Whoop / …); enter manually for now. Recovery only
+            <em> nudges</em> recommendations — it never changes your training scores.
+          </p>
+        </div>
+
         <div className="mt-4 flex flex-wrap gap-2">
           <button
             onClick={generate}

@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { ScrollView, View, Text, Pressable, TextInput } from 'react-native';
 import {
   deriveTargets,
@@ -15,6 +15,7 @@ import {
 import { searchFoods, requestNutritionAdvice, lookupBarcode, type NutritionAdviceResult } from '../../lib/api';
 import { useNutritionStore } from '../../lib/nutritionStore';
 import { useSettingsStore, toAiSettings } from '../../lib/settingsStore';
+import { useRecoveryStore } from '../../lib/recoveryStore';
 import { BarcodeScanner } from '../../components/BarcodeScanner';
 
 const LABELS: Record<NutrientKey, string> = {
@@ -37,8 +38,14 @@ const round = (n: number) => (n >= 100 ? Math.round(n).toString() : n.toFixed(1)
 export default function NutritionScreen() {
   const { items, add, remove, clear } = useNutritionStore();
   const settings = useSettingsStore();
+  const bodyWeightKg = useRecoveryStore((s) => s.bodyWeightKg);
+  const setRecovery = useRecoveryStore((s) => s.set);
   const [sex, setSex] = useState<Sex>('male');
   const [weightKg, setWeightKg] = useState(80);
+
+  useEffect(() => {
+    if (typeof bodyWeightKg === 'number' && bodyWeightKg > 0) setWeightKg(bodyWeightKg);
+  }, [bodyWeightKg]);
   const [goal, setGoal] = useState<Goal>('maintain');
   const [query, setQuery] = useState('');
   const [results, setResults] = useState<Food[]>([]);
@@ -105,7 +112,11 @@ export default function NutritionScreen() {
         <View className="flex-row items-center gap-1 rounded-md bg-surface-2 px-2 py-1">
           <TextInput
             value={String(weightKg)}
-            onChangeText={(t) => setWeightKg(Number(t) || 0)}
+            onChangeText={(t) => {
+              const v = Number(t) || 0;
+              setWeightKg(v);
+              if (v > 0) setRecovery({ bodyWeightKg: v });
+            }}
             keyboardType="numeric"
             className="w-10 text-center text-sm text-ink"
             placeholderTextColor="#52525c"
