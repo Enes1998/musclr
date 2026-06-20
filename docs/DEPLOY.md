@@ -1,7 +1,22 @@
 # Deploy & release runbook
 
-CI (`.github/workflows/ci.yml`) runs typecheck + tests + the web build + the mobile compile gate on
-every push/PR. Below is how to ship each surface. Credentials: see `docs/CREDENTIALS.md`.
+CI (`.github/workflows/ci.yml`) runs typecheck + tests + the web build + the mobile compile gate +
+Playwright (incl. the 3D viewer) + a backend Docker build on every push/PR. Below is how to ship
+each surface. Credentials: see `docs/CREDENTIALS.md`.
+
+## One-action deploy
+`.github/workflows/deploy.yml` deploys **everything** on a `v*` tag or manual run — each job
+self-skips until its secret is present, so you can light them up one at a time:
+- **Backend → Cloud Run:** add secret `GCP_SA_KEY` (service-account JSON) + variable `GCP_PROJECT`.
+- **Web → Vercel:** add secret `VERCEL_TOKEN` (web also has `apps/web/vercel.json` for zero-config import).
+- **Mobile → EAS build:** add secret `EXPO_TOKEN`.
+
+After adding credentials, verify what's actually live with the self-test:
+```bash
+API_URL=https://your-backend node scripts/golive-check.mjs
+```
+It checks backend health, the AI relay, USDA nutrition, configured wearable providers, and Supabase,
+and exits non-zero on any failure (so it can gate a release).
 
 ## Web → Vercel
 1. Import the repo at <https://vercel.com/new>. Set **Root Directory** to `apps/web`.

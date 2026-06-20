@@ -1,0 +1,61 @@
+name: Deploy
+
+# One-action deploy once you add the secrets (Settings → Secrets and variables → Actions).
+# Each job self-skips if its secret is absent, so partial setups work. Trigger manually or on a tag.
+on:
+  workflow_dispatch:
+  push:
+    tags: ['v*']
+
+jobs:
+  backend-cloud-run:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - id: guard
+        run: echo "ready=${{ secrets.GCP_SA_KEY != '' && vars.GCP_PROJECT != '' }}" >> "$GITHUB_OUTPUT"
+      - if: steps.guard.outputs.ready == 'true'
+        uses: google-github-actions/auth@v2
+        with: { credentials_json: '${{ secrets.GCP_SA_KEY }}' }
+      - if: steps.guard.outputs.ready == 'true'
+        uses: google-github-actions/deploy-cloudrun@v2
+        with:
+          service: musclr-backend
+          source: backend
+          region: ${{ vars.GCP_REGION || 'us-central1' }}
+      - if: steps.guard.outputs.ready != 'true'
+        run: echo "Skipping: set the GCP_SA_KEY secret + GCP_PROJECT variable to enable (docs/DEPLOY.md)."
+
+  web-vercel:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - id: guard
+        run: echo "ready=${{ secrets.VERCEL_TOKEN != '' }}" >> "$GITHUB_OUTPUT"
+      - if: steps.guard.outputs.ready == 'true'
+        run: npx vercel deploy --prod --yes --cwd apps/web --token "${{ secrets.VERCEL_TOKEN }}"
+      - if: steps.guard.outputs.ready != 'true'
+        run: echo "Skipping: set the VERCEL_TOKEN secret to enable (docs/DEPLOY.md)."
+
+  mobile-eas:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - id: guard
+        run: echo "ready=${{ secrets.EXPO_TOKEN != '' }}" >> "$GITHUB_OUTPUT"
+      - if: steps.guard.outputs.ready == 'true'
+        uses: pnpm/action-setup@v4
+        with: { version: 10.33.2 }
+      - if: steps.guard.outputs.ready == 'true'
+        uses: actions/setup-node@v4
+        with: { node-version: 20, cache: pnpm }
+      - if: steps.guard.outputs.ready == 'true'
+        run: pnpm install --frozen-lockfile
+      - if: steps.guard.outputs.ready == 'true'
+        uses: expo/expo-github-action@v8
+        with: { eas-version: latest, token: '${{ secrets.EXPO_TOKEN }}' }
+      - if: steps.guard.outputs.ready == 'true'
+        working-directory: apps/mobile
+        run: eas build --profile production --platform all --non-interactive --no-wait
+      - if: steps.guard.outputs.ready != 'true'
+        run: echo "Skipping: set the EXPO_TOKEN secret to enable (docs/DEPLOY.md)."
