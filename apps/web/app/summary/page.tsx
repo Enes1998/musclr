@@ -5,7 +5,8 @@ import {
   MUSCLE_GROUPS,
   computeMuscleLoad,
   scoreLabel,
-  scoreToColor,
+  loadColor,
+  paletteLegend,
   ALL_EXERCISES,
   buildPlanPrompt,
   EVIDENCE_MODULE,
@@ -53,9 +54,9 @@ export default function SummaryPage() {
         ...g,
         score: loads[g.id],
         label: scoreLabel(loads[g.id]),
-        color: scoreToColor(loads[g.id]),
+        color: loadColor(loads[g.id], settings.palette),
       })).sort((a, b) => b.score - a.score),
-    [loads],
+    [loads, settings.palette],
   );
 
   const prompt = useMemo(
@@ -73,9 +74,15 @@ export default function SummaryPage() {
 
       <section className="mb-6">
         <MuscleViewer scores={loads as Partial<Record<MuscleId, number>>} />
-        <p className="mt-2 text-center font-mono text-xs text-ink-3">
-          Drag to rotate · green = undertrained, red = overtrained
-        </p>
+        <div className="mt-2 flex flex-wrap items-center justify-center gap-3 font-mono text-xs text-ink-3">
+          <span>Drag to rotate</span>
+          {paletteLegend(settings.palette).map((l) => (
+            <span key={l.label} className="inline-flex items-center gap-1">
+              <span className="inline-block h-2.5 w-2.5 rounded-full" style={{ backgroundColor: l.color }} />
+              {l.label}
+            </span>
+          ))}
+        </div>
       </section>
 
       <section className="rounded-2xl border border-line bg-surface p-6">

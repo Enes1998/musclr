@@ -3,13 +3,16 @@
 // as the web app — the WebView just hosts it. Bridge: RN calls `window.__viewer.setScores(...)` via
 // injectJavaScript; this page posts `{type:'ready'}` back through `window.ReactNativeWebView`.
 
-import type { MuscleId } from '@musclr/core';
+import type { LoadPalette, MuscleId } from '@musclr/core';
 import { createMuscleViewer, type MuscleViewerHandle } from '../viewer';
 import glbDataUrl from '../../model/model.glb';
 
 declare global {
   interface Window {
-    __viewer?: { setScores(scores: Partial<Record<MuscleId, number>>): void };
+    __viewer?: {
+      setScores(scores: Partial<Record<MuscleId, number>>): void;
+      setPalette(palette: LoadPalette): void;
+    };
     ReactNativeWebView?: { postMessage(data: string): void };
   }
 }
@@ -31,6 +34,13 @@ function mount(): void {
         viewer.setScores(scores);
       } catch {
         /* ignore malformed payloads */
+      }
+    },
+    setPalette(p) {
+      try {
+        viewer.setPalette(p);
+      } catch {
+        /* ignore */
       }
     },
   };

@@ -2,18 +2,21 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { t } from '@musclr/core';
+import { useSettingsStore } from '../lib/settingsStore';
 
 const LINKS: [string, string][] = [
-  ['/', 'Home'],
-  ['/log', 'Log'],
-  ['/summary', 'Summary'],
-  ['/nutrition', 'Nutrition'],
-  ['/history', 'History'],
-  ['/settings', 'Settings'],
+  ['/', 'nav.home'],
+  ['/log', 'nav.log'],
+  ['/summary', 'nav.summary'],
+  ['/nutrition', 'nav.nutrition'],
+  ['/history', 'nav.history'],
+  ['/settings', 'nav.settings'],
 ];
 
 export function NavBar() {
   const pathname = usePathname();
+  const locale = useSettingsStore((s) => s.locale);
   return (
     <nav className="sticky top-0 z-10 border-b border-line bg-bg/80 backdrop-blur">
       <div className="mx-auto flex max-w-3xl items-center gap-6 px-6 py-4">
@@ -21,7 +24,7 @@ export function NavBar() {
           musclr
         </Link>
         <div className="flex gap-1">
-          {LINKS.map(([href, label]) => {
+          {LINKS.map(([href, key]) => {
             const active = pathname === href;
             return (
               <Link
@@ -31,7 +34,7 @@ export function NavBar() {
                   active ? 'bg-surface-2 text-ink' : 'text-ink-2 hover:text-ink'
                 }`}
               >
-                {label}
+                {t(key, locale)}
               </Link>
             );
           })}

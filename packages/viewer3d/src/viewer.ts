@@ -5,7 +5,7 @@
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
-import { scoreToColor, type MuscleId } from '@musclr/core';
+import { loadColor, type LoadPalette, type MuscleId } from '@musclr/core';
 import { musclesForMesh, type MeshMuscleMap } from './meshMap';
 
 export interface MuscleViewerOptions {
@@ -20,19 +20,23 @@ export interface MuscleViewerOptions {
    * mobile WebView. Forces autoRotate off (continuous rotation needs a loop). Default: false (web).
    */
   renderOnDemand?: boolean;
+  /** Heatmap color palette. 'cvd' = colorblind-safe (WCAG). Default 'default'. */
+  palette?: LoadPalette;
 }
 
 export interface MuscleViewerHandle {
   /** Recolor the model from per-muscle-group scores (0-100). */
   setScores(scores: Partial<Record<MuscleId, number>>): void;
+  /** Switch the color palette (e.g. to the colorblind-safe scale) and re-render. */
+  setPalette(palette: LoadPalette): void;
   resize(): void;
   dispose(): void;
 }
 
 const INERT_COLOR = 0x26262f;
 
-function makeMaterial(score: number): THREE.MeshStandardMaterial {
-  const color = new THREE.Color(scoreToColor(score));
+function makeMaterial(score: number, palette: LoadPalette): THREE.MeshStandardMaterial {
+  const color = new THREE.Color(loadColor(score, palette));
   let emissiveIntensity = 0;
   if (score > 70) emissiveIntensity = 0.35;
   else if (score > 40) emissiveIntensity = 0.18;
@@ -53,6 +57,7 @@ export function createMuscleViewer(
   const meshMap = options.meshMap;
   const renderOnDemand = options.renderOnDemand ?? false;
   const autoRotate = renderOnDemand ? false : (options.autoRotate ?? true);
+  let palette: LoadPalette = options.palette ?? 'default';
 
   const scene = new THREE.Scene();
   if (options.background != null) scene.background = new THREE.Color(options.background);
@@ -117,7 +122,7 @@ export function createMuscleViewer(
         });
       } else {
         const score = Math.max(...muscles.map((m) => scores[m] ?? 0));
-        mesh.material = makeMaterial(score);
+        mesh.material = makeMaterial(score, palette);
       }
       if (Array.isArray(old)) old.forEach((m) => m.dispose());
       else old?.dispose();
@@ -215,6 +220,10 @@ export function createMuscleViewer(
     setScores(scores) {
       if (meshes.length === 0) pendingScores = scores;
       else applyScores(scores);
+    },
+    setPalette(p) {
+      palette = p;
+      if (meshes.length > 0) applyScores(lastScores);
     },
     resize,
     dispose() {

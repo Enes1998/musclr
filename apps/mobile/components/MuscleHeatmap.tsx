@@ -3,6 +3,7 @@ import { View } from 'react-native';
 import { Asset } from 'expo-asset';
 import { WebView } from 'react-native-webview';
 import type { MuscleId } from '@musclr/core';
+import { useSettingsStore } from '../lib/settingsStore';
 
 // The 3D muscle heatmap is hosted in a self-contained offline HTML page (assets/viewer.html) so
 // one implementation runs identically on iOS + Android (and matches the web app's renderer). The
@@ -18,6 +19,9 @@ export function MuscleHeatmap({ scores }: { scores: Partial<Record<MuscleId, num
   const ready = useRef(false);
   const latest = useRef(scores);
   latest.current = scores;
+  const palette = useSettingsStore((s) => s.palette);
+  const paletteRef = useRef(palette);
+  paletteRef.current = palette;
 
   useEffect(() => {
     let alive = true;
@@ -32,14 +36,14 @@ export function MuscleHeatmap({ scores }: { scores: Partial<Record<MuscleId, num
 
   const push = () => {
     webRef.current?.injectJavaScript(
-      `window.__viewer && window.__viewer.setScores(${JSON.stringify(latest.current)}); true;`,
+      `window.__viewer && (window.__viewer.setPalette(${JSON.stringify(paletteRef.current)}), window.__viewer.setScores(${JSON.stringify(latest.current)})); true;`,
     );
   };
 
   useEffect(() => {
     if (ready.current) push();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [scores]);
+  }, [scores, palette]);
 
   if (!uri) return <View className="h-96 rounded-xl bg-bg-2" />;
 

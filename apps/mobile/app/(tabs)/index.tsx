@@ -6,12 +6,17 @@ import {
   getWorkoutEntryErrors,
   getTrustedDayTotals,
   getTrustedWeekTotals,
+  fromKg,
+  toKg,
+  roundWeight,
   type WorkoutEntry,
 } from '@musclr/core';
 import { useWeekStore } from '../../lib/store';
+import { useSettingsStore } from '../../lib/settingsStore';
 
 export default function LogScreen() {
   const { week, activeDay, setActiveDay, addExercise, updateExercise, removeExercise } = useWeekStore();
+  const unit = useSettingsStore((s) => s.weightUnit);
   const entries = week[activeDay];
   const dayTotals = useMemo(() => getTrustedDayTotals(entries), [entries]);
   const weekTotals = useMemo(() => getTrustedWeekTotals(week), [week]);
@@ -41,9 +46,10 @@ export default function LogScreen() {
       <View className="overflow-hidden rounded-xl border border-line bg-surface">
         <View className="flex-row border-b border-line px-3 py-2">
           <Text className="flex-1 font-mono text-xs text-ink-3">Exercise</Text>
-          <Text className="w-12 text-center font-mono text-xs text-ink-3">Sets</Text>
-          <Text className="w-12 text-center font-mono text-xs text-ink-3">Reps</Text>
-          <Text className="w-14 text-center font-mono text-xs text-ink-3">kg</Text>
+          <Text className="w-10 text-center font-mono text-xs text-ink-3">Sets</Text>
+          <Text className="w-10 text-center font-mono text-xs text-ink-3">Reps</Text>
+          <Text className="w-12 text-center font-mono text-xs text-ink-3">{unit}</Text>
+          <Text className="w-10 text-center font-mono text-xs text-ink-3">RIR</Text>
           <View className="w-6" />
         </View>
 
@@ -52,7 +58,7 @@ export default function LogScreen() {
         ) : (
           entries.map((entry, i) => {
             const errors = getWorkoutEntryErrors(entry);
-            const numField = (f: 'sets' | 'reps' | 'weight') => (
+            const numField = (f: 'sets' | 'reps') => (
               <TextInput
                 value={String(entry[f])}
                 keyboardType="numeric"
@@ -71,9 +77,32 @@ export default function LogScreen() {
                   onChangeText={(t) => updateExercise(activeDay, i, { name: t })}
                   className="flex-1 rounded bg-surface-2 px-2 py-1 text-ink"
                 />
-                <View className="w-12">{numField('sets')}</View>
-                <View className="w-12">{numField('reps')}</View>
-                <View className="w-14">{numField('weight')}</View>
+                <View className="w-10">{numField('sets')}</View>
+                <View className="w-10">{numField('reps')}</View>
+                <View className="w-12">
+                  <TextInput
+                    value={String(roundWeight(fromKg(entry.weight, unit)))}
+                    keyboardType="numeric"
+                    onChangeText={(t) => {
+                      const v = parseNumericInput(t);
+                      updateExercise(activeDay, i, { weight: v == null ? 0 : toKg(v, unit), unit });
+                    }}
+                    className={`rounded bg-surface-2 px-1 py-1 text-center text-ink ${errors.weight ? 'border border-load-over' : ''}`}
+                  />
+                </View>
+                <View className="w-10">
+                  <TextInput
+                    value={entry.rir == null ? '' : String(entry.rir)}
+                    keyboardType="numeric"
+                    placeholder="—"
+                    placeholderTextColor="#52525c"
+                    onChangeText={(t) => {
+                      const v = parseNumericInput(t);
+                      updateExercise(activeDay, i, { rir: v == null ? undefined : v });
+                    }}
+                    className="rounded bg-surface-2 px-1 py-1 text-center text-ink-2"
+                  />
+                </View>
                 <Pressable onPress={() => removeExercise(activeDay, i)} className="w-6 items-center">
                   <Text className="text-ink-3">✕</Text>
                 </Pressable>

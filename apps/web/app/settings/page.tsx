@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { useSettingsStore, toAiSettings } from '../../lib/settingsStore';
 import { useHasHydrated } from '../../lib/store';
 import { requestPlan, type PlanProvider } from '../../lib/api';
+import { LOCALES, LOCALE_LABELS } from '@musclr/core';
 
 const PROVIDERS: { id: PlanProvider; label: string; note: string }[] = [
   { id: 'mock', label: 'Built-in (no key)', note: 'Deterministic, evidence-grounded plans. Works offline, no account.' },
@@ -122,9 +123,73 @@ export default function SettingsPage() {
         </div>
       </section>
 
+      <section className="mt-6 rounded-2xl border border-line bg-surface p-6">
+        <h2 className="mb-4 font-display text-lg font-semibold">Display &amp; accessibility</h2>
+
+        <div className="mb-4">
+          <p className="mb-1 font-mono text-xs uppercase tracking-wider text-ink-3">Heatmap palette</p>
+          <div className="flex gap-2">
+            {(['default', 'cvd'] as const).map((p) => (
+              <button
+                key={p}
+                onClick={() => s.setPalette(p)}
+                className={`rounded-md px-3 py-1.5 text-sm ${s.palette === p ? 'bg-accent text-bg' : 'bg-surface-2 text-ink-2'}`}
+              >
+                {p === 'default' ? 'Default (green→red)' : 'Colorblind-safe (blue→orange)'}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <label className="mb-4 flex items-center justify-between">
+          <span className="text-sm">
+            Reduce motion
+            <span className="block text-xs text-ink-3">Stops the 3D model from auto-rotating.</span>
+          </span>
+          <input
+            type="checkbox"
+            checked={s.reducedMotion}
+            onChange={(e) => s.setReducedMotion(e.target.checked)}
+            className="h-5 w-5 accent-[var(--tw-accent,#f97316)]"
+          />
+        </label>
+
+        <div className="mb-4">
+          <p className="mb-1 font-mono text-xs uppercase tracking-wider text-ink-3">Weight unit</p>
+          <div className="flex gap-2">
+            {(['kg', 'lb'] as const).map((u) => (
+              <button
+                key={u}
+                onClick={() => s.setWeightUnit(u)}
+                className={`rounded-md px-3 py-1.5 text-sm ${s.weightUnit === u ? 'bg-accent text-bg' : 'bg-surface-2 text-ink-2'}`}
+              >
+                {u}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <div>
+          <p className="mb-1 font-mono text-xs uppercase tracking-wider text-ink-3">Language</p>
+          <div className="flex gap-2">
+            {LOCALES.map((l) => (
+              <button
+                key={l}
+                onClick={() => s.setLocale(l)}
+                className={`rounded-md px-3 py-1.5 text-sm ${s.locale === l ? 'bg-accent text-bg' : 'bg-surface-2 text-ink-2'}`}
+              >
+                {LOCALE_LABELS[l]}
+              </button>
+            ))}
+          </div>
+        </div>
+      </section>
+
       <p className="mt-6 font-mono text-xs text-ink-3">
-        Need keys? See <span className="text-ink">docs/CREDENTIALS.md</span> for where to get each
-        one and how to configure the hosted coach.
+        Need keys? See <span className="text-ink">docs/CREDENTIALS.md</span>. ·{' '}
+        <a href="/licenses" className="text-accent underline">
+          Licenses &amp; credits
+        </a>
       </p>
     </main>
   );

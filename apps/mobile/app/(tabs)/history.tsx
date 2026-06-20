@@ -5,7 +5,7 @@ import {
   compareSnapshots,
   muscleTrend,
   personalRecords,
-  scoreToColor,
+  loadColor,
   snapshotStats,
   sortSnapshots,
   volumeTrend,
@@ -14,6 +14,7 @@ import {
 } from '@musclr/core';
 import { useWeekStore } from '../../lib/store';
 import { useHistoryStore } from '../../lib/historyStore';
+import { useSettingsStore } from '../../lib/settingsStore';
 
 const STATUS_LABEL: Record<VolumeStatus, string> = {
   below_mev: 'Below MEV',
@@ -51,6 +52,7 @@ export default function HistoryScreen() {
   const snapshots = useHistoryStore((s) => s.snapshots);
   const capture = useHistoryStore((s) => s.capture);
   const remove = useHistoryStore((s) => s.remove);
+  const palette = useSettingsStore((s) => s.palette);
 
   const ordered = useMemo(() => sortSnapshots(snapshots), [snapshots]);
   const latest = ordered[ordered.length - 1];
@@ -132,7 +134,7 @@ export default function HistoryScreen() {
                       </Text>
                     </View>
                     <View className="flex-1" />
-                    <Sparkline values={trend} color={scoreToColor(latestStats.loads[g.id])} />
+                    <Sparkline values={trend} color={loadColor(latestStats.loads[g.id], palette)} />
                   </View>
                 );
               })}

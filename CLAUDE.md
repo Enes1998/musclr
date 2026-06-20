@@ -82,6 +82,10 @@ This table is the source of truth. Both columns must be ✅ before any feature i
 | Barcode scanner + manual food entry | ✅ `/nutrition` (ZXing) | ✅ Nutrition tab (expo-camera) |
 | AI provider settings (BYO keys) | ✅ `/settings` | ✅ Settings tab |
 | Profile history / weekly snapshots | ✅ `/history` | ✅ History tab |
+| Accessibility (colorblind palette, text alt, reduced motion) | ✅ `/settings` | ✅ Settings tab |
+| Licenses / credits | ✅ `/licenses` | ✅ `/licenses` (stack) |
+| i18n (en/es foundation) | ✅ | ✅ |
+| Units (kg/lb) + RIR logging | ✅ `/log` | ✅ Log tab |
 
 When you add a new feature, add a row. Both cells must be ✅ before you're done.
 

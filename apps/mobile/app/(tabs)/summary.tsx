@@ -4,7 +4,8 @@ import {
   MUSCLE_GROUPS,
   computeMuscleLoad,
   scoreLabel,
-  scoreToColor,
+  loadColor,
+  paletteLegend,
   ALL_EXERCISES,
   type MuscleId,
   type TrainingGoal,
@@ -47,9 +48,14 @@ export default function SummaryScreen() {
       <Text className="mb-4 font-display text-2xl text-ink">Weekly summary</Text>
 
       <MuscleHeatmap scores={loads as Partial<Record<MuscleId, number>>} />
-      <Text className="mb-4 mt-2 text-center font-mono text-xs text-ink-3">
-        green = undertrained · red = overtrained
-      </Text>
+      <View className="mb-4 mt-2 flex-row flex-wrap justify-center gap-3">
+        {paletteLegend(settings.palette).map((l) => (
+          <View key={l.label} className="flex-row items-center gap-1">
+            <View style={{ width: 10, height: 10, borderRadius: 5, backgroundColor: l.color }} />
+            <Text className="font-mono text-xs text-ink-3">{l.label}</Text>
+          </View>
+        ))}
+      </View>
 
       <View className="rounded-2xl border border-line bg-surface p-4">
         <Text className="mb-3 font-display text-lg text-ink">Muscle load</Text>
@@ -57,7 +63,7 @@ export default function SummaryScreen() {
           <View key={g.id} className="mb-2 flex-row items-center gap-2">
             <Text className="w-24 text-sm text-ink">{g.label}</Text>
             <View className="h-2 flex-1 overflow-hidden rounded-full bg-surface-3">
-              <View style={{ width: `${g.score}%`, backgroundColor: scoreToColor(g.score) }} className="h-full rounded-full" />
+              <View style={{ width: `${g.score}%`, backgroundColor: loadColor(g.score, settings.palette) }} className="h-full rounded-full" />
             </View>
             <Text className="w-8 text-right font-mono text-xs text-ink-2">{g.score}</Text>
             <Text className="w-24 text-right font-mono text-xs text-ink-3">{scoreLabel(g.score)}</Text>

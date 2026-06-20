@@ -1,6 +1,9 @@
 import { Tabs } from 'expo-router';
+import { t } from '@musclr/core';
+import { useSettingsStore } from '../../lib/settingsStore';
 
 export default function TabsLayout() {
+  const locale = useSettingsStore((s) => s.locale);
   return (
     <Tabs
       screenOptions={{
@@ -12,11 +15,11 @@ export default function TabsLayout() {
         sceneStyle: { backgroundColor: '#0a0a0c' },
       }}
     >
-      <Tabs.Screen name="index" options={{ title: 'Log' }} />
-      <Tabs.Screen name="summary" options={{ title: 'Summary' }} />
-      <Tabs.Screen name="nutrition" options={{ title: 'Nutrition' }} />
-      <Tabs.Screen name="history" options={{ title: 'History' }} />
-      <Tabs.Screen name="settings" options={{ title: 'Settings' }} />
+      <Tabs.Screen name="index" options={{ title: t('nav.log', locale) }} />
+      <Tabs.Screen name="summary" options={{ title: t('nav.summary', locale) }} />
+      <Tabs.Screen name="nutrition" options={{ title: t('nav.nutrition', locale) }} />
+      <Tabs.Screen name="history" options={{ title: t('nav.history', locale) }} />
+      <Tabs.Screen name="settings" options={{ title: t('nav.settings', locale) }} />
     </Tabs>
   );
 }
