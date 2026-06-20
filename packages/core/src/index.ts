@@ -4,6 +4,7 @@ export * from './exercises';
 export * from './exerciseDb';
 export * from './muscles';
 export * from './history';
+export * from './progress';
 export * from './scoring';
 export * from './validation';
 export * from './program';

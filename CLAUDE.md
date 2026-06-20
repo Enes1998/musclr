@@ -79,7 +79,7 @@ This table is the source of truth. Both columns must be ✅ before any feature i
 | 3D muscle heatmap | ✅ `/summary` | ✅ Summary tab (WebView) |
 | AI coach | ✅ | ✅ |
 | Nutrition tracker (macros + micros) | ✅ `/nutrition` | ✅ Nutrition tab |
-| Profile history / weekly snapshots | ❌ not built | ❌ not built |
+| Profile history / weekly snapshots | ✅ `/history` | ✅ History tab |
 
 When you add a new feature, add a row. Both cells must be ✅ before you're done.
 

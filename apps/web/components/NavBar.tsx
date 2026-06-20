@@ -8,6 +8,7 @@ const LINKS: [string, string][] = [
   ['/log', 'Log'],
   ['/summary', 'Summary'],
   ['/nutrition', 'Nutrition'],
+  ['/history', 'History'],
 ];
 
 export function NavBar() {
