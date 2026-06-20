@@ -5,7 +5,14 @@ import { defineConfig, devices } from '@playwright/test';
 export default defineConfig({
   testDir: './e2e',
   timeout: 30_000,
-  use: { baseURL: 'http://localhost:3000', ...devices['Desktop Chrome'] },
+  use: {
+    baseURL: 'http://localhost:3000',
+    ...devices['Desktop Chrome'],
+    // Software WebGL (SwiftShader) so the three.js heatmap actually renders in headless CI.
+    launchOptions: {
+      args: ['--use-gl=angle', '--use-angle=swiftshader', '--enable-unsafe-swiftshader', '--ignore-gpu-blocklist'],
+    },
+  },
   webServer: {
     command: 'pnpm dev',
     url: 'http://localhost:3000',

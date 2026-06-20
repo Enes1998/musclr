@@ -41,3 +41,17 @@ jobs:
 
       - name: Mobile compile gate (Metro / react-native-web)
         run: pnpm --filter @musclr/mobile export:web
+
+      - name: Install Playwright Chromium
+        run: pnpm --filter web exec playwright install --with-deps chromium
+
+      - name: Web + 3D-viewer E2E (Playwright)
+        run: pnpm --filter web exec playwright test
+
+  docker:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build the backend image (Cloud Run artifact)
+        run: docker build -f backend/Dockerfile -t musclr-backend:ci .
+

@@ -61,11 +61,14 @@ A provider is "configured" once its client id/secret env vars are set.
 Also set `PUBLIC_BASE_URL` (the backend's public URL) so redirect URIs are correct, and register
 `${PUBLIC_BASE_URL}/api/health/<provider>/callback` as the OAuth redirect in each provider console.
 
-**Token storage (production):** envelope-encrypt tokens with **Google Cloud KMS**
-(`KMS_KEY_NAME`) and upsert into the `health_connections` table (`backend/supabase/schema.sql`,
-RLS-guarded). The callback returns `persisted:false` until KMS + Supabase are configured — by design
-we never store plaintext provider tokens. Refresh via a scheduled worker; ingest via
-webhook → queue → normalize → upsert.
+**Token storage:** the callback exchanges the code and stores tokens **AES-256-GCM-encrypted**
+(`backend/src/health/tokenStore.ts`, key from `HEALTH_TOKEN_MASTER_KEY`) — never plaintext. The full
+exchange → encrypt → store → decrypt pipeline is covered by `backend/test/healthConnect.test.ts`
+(against a conformant mock token endpoint, asserting no plaintext at rest + tamper detection). In
+production, persist the encrypted blob to the `health_connections` table (`backend/supabase/schema.sql`,
+RLS-guarded), wrap the master key with **Cloud KMS** (`KMS_KEY_NAME`), refresh via a scheduled
+worker, and ingest via webhook → queue → normalize → upsert. `POST /api/health/:provider/disconnect`
+purges the connection.
 
 ---
 

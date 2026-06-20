@@ -4,9 +4,10 @@ import {
   CLOUD_PROVIDERS,
   isCloudProvider,
   buildAuthorizeUrl,
-  buildTokenExchange,
   type CloudProvider,
 } from '../health/oauth';
+import { exchangeAndStore } from '../health/connect';
+import { removeConnection } from '../health/tokenStore';
 
 export const health = new Hono();
 
@@ -62,29 +63,40 @@ health.get('/:provider/connect', (c) => {
   return c.json({ authorizeUrl, state, codeVerifier });
 });
 
-// OAuth callback: exchange the code for tokens. Persisting tokens requires Supabase + Cloud KMS
-// (envelope encryption) — see docs/WEARABLES.md. Without them we don't store plaintext secrets.
+// OAuth callback: exchange the code for tokens, AES-256-GCM-encrypt them, and store the connection.
+// `state` maps to the user's session (here used directly as the user key). Tokens are never returned
+// or stored in plaintext.
 health.get('/:provider/callback', async (c) => {
   const provider = c.req.param('provider');
   if (!isCloudProvider(provider)) return c.json({ error: 'unknown_provider' }, 404);
   const code = c.req.query('code');
   const codeVerifier = c.req.query('code_verifier') ?? undefined;
+  const userKey = c.req.query('state'); // resolve state → user/session in production
   const id = clientId(provider);
   const secret = clientSecret(provider);
-  if (!code || !id) return c.json({ error: 'missing_code_or_config' }, 400);
-
-  const redirectUri = `${PUBLIC_BASE_URL}/api/health/${provider}/callback`;
-  const { url, body } = buildTokenExchange(provider, { code, redirectUri, clientId: id, codeVerifier });
-  const headers: Record<string, string> = { 'Content-Type': 'application/x-www-form-urlencoded' };
-  if (secret) headers.Authorization = `Basic ${Buffer.from(`${id}:${secret}`).toString('base64')}`;
+  if (!code || !id || !userKey) return c.json({ error: 'missing_code_state_or_config' }, 400);
 
   try {
-    const res = await fetch(url, { method: 'POST', headers, body });
-    if (!res.ok) return c.json({ error: 'token_exchange_failed', status: res.status }, 502);
-    // Tokens obtained. Encrypt with Cloud KMS + upsert into Supabase health_connections before
-    // returning to production. For now, acknowledge without persisting plaintext.
-    return c.json({ connected: true, persisted: false, note: 'Configure Supabase + Cloud KMS to persist tokens (docs/WEARABLES.md).' });
+    const result = await exchangeAndStore(provider, {
+      code,
+      codeVerifier,
+      clientId: id,
+      clientSecret: secret,
+      redirectUri: `${PUBLIC_BASE_URL}/api/health/${provider}/callback`,
+      userKey,
+    });
+    return c.json(result);
   } catch (e) {
     return c.json({ error: 'provider_error', detail: e instanceof Error ? e.message : String(e) }, 502);
   }
+});
+
+// Disconnect: purge the stored connection (revoke at the provider in production).
+health.post('/:provider/disconnect', (c) => {
+  const provider = c.req.param('provider');
+  if (!isCloudProvider(provider)) return c.json({ error: 'unknown_provider' }, 404);
+  const userKey = c.req.query('state') ?? c.req.query('user');
+  if (!userKey) return c.json({ error: 'missing_user' }, 400);
+  const removed = removeConnection(userKey, provider);
+  return c.json({ disconnected: removed });
 });

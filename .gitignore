@@ -10,3 +10,6 @@ frontend/dist/
 .next/
 .expo/
 coverage/
+test-results/
+playwright-report/
+.playwright/
