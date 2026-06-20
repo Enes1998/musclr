@@ -35,14 +35,15 @@ const round = (n: number) => (n >= 100 ? Math.round(n).toString() : n.toFixed(1)
 export default function NutritionScreen() {
   const { items, add, remove, clear } = useNutritionStore();
   const [sex, setSex] = useState<Sex>('male');
+  const [weightKg, setWeightKg] = useState(80);
   const [goal, setGoal] = useState<Goal>('maintain');
   const [query, setQuery] = useState('');
   const [results, setResults] = useState<Food[]>([]);
   const [searching, setSearching] = useState(false);
   const [advice, setAdvice] = useState<NutritionAdviceResult | null>(null);
 
-  const profile: NutritionProfile = { sex, age: 30, heightCm: 180, weightKg: 80, activity: 'moderate', goal };
-  const targets = useMemo(() => deriveTargets(profile), [sex, goal]);
+  const profile: NutritionProfile = { sex, age: 30, heightCm: 180, weightKg, activity: 'moderate', goal };
+  const targets = useMemo(() => deriveTargets(profile), [sex, weightKg, goal]);
   const consumed = useMemo(() => sumNutrients(items.map((i) => scaleNutrients(i.food.per100, i.grams))), [items]);
   const statuses = useMemo(() => computeDailyStatus(consumed, targets), [consumed, targets]);
   const byKey = useMemo(() => Object.fromEntries(statuses.map((s) => [s.key, s])), [statuses]);
@@ -77,6 +78,16 @@ export default function NutritionScreen() {
             <Text className={sex === s ? 'text-bg' : 'text-ink-2'}>{s}</Text>
           </Pressable>
         ))}
+        <View className="flex-row items-center gap-1 rounded-md bg-surface-2 px-2 py-1">
+          <TextInput
+            value={String(weightKg)}
+            onChangeText={(t) => setWeightKg(Number(t) || 0)}
+            keyboardType="numeric"
+            className="w-10 text-center text-sm text-ink"
+            placeholderTextColor="#52525c"
+          />
+          <Text className="text-xs text-ink-3">kg</Text>
+        </View>
         {(['cut', 'maintain', 'gain'] as Goal[]).map((g) => (
           <Pressable key={g} onPress={() => setGoal(g)} className={`rounded-md px-3 py-1.5 ${goal === g ? 'bg-accent' : 'bg-surface-2'}`}>
             <Text className={goal === g ? 'text-bg' : 'text-ink-2'}>{g}</Text>

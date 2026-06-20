@@ -364,6 +364,8 @@ The 8 original product asks, mapped to reality (all built features are **verifie
 
 ## 12. Conventions & "load-bearing" decisions
 
+- **One app, all platforms.** Every feature ships to `apps/web` **and** `apps/mobile` in the same session/PR. Features siloed to one platform are incomplete. See `CLAUDE.md` at the repo root for the canonical rule and feature parity table.
+- **`frontend/` is dead.** The root-level `frontend/` directory is an archived Vite prototype — not in the pnpm workspace, not run by Turborepo. Never develop there; start `apps/web` instead.
 - **TypeScript, strict, everywhere.** Shared logic has **no** React/DOM/RN imports so it stays portable (and so Metro can type-strip it).
 - **Frozen scoring math** in `scoring.ts` — change it and parity tests fail by design.
 - **Tokens are the single source of truth** for styling; never hardcode colors. Use the `@musclr/tokens/json` entry in Tailwind/NativeWind configs (raw `.ts` won't load there).
