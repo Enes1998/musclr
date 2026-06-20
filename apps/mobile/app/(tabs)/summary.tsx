@@ -7,6 +7,7 @@ import {
   loadColor,
   paletteLegend,
   ALL_EXERCISES,
+  track,
   type MuscleId,
   type TrainingGoal,
 } from '@musclr/core';
@@ -37,7 +38,9 @@ export default function SummaryScreen() {
     setLoading(true);
     setError(null);
     try {
-      setPlan(await requestPlan({ goal, loads: loads as Partial<Record<MuscleId, number>>, readiness: readinessFrom(recovery), ai: toAiSettings(settings) }));
+      const res = await requestPlan({ goal, loads: loads as Partial<Record<MuscleId, number>>, readiness: readinessFrom(recovery), ai: toAiSettings(settings) });
+      setPlan(res);
+      track({ name: 'plan_generated', props: { goal, provider: res.meta.provider, readiness: readinessFrom(recovery) } });
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e));
     } finally {

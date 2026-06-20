@@ -10,6 +10,7 @@ import {
   ALL_EXERCISES,
   buildPlanPrompt,
   EVIDENCE_MODULE,
+  track,
   type TrainingGoal,
   type MuscleId,
 } from '@musclr/core';
@@ -43,6 +44,7 @@ export default function SummaryPage() {
         ai: toAiSettings(settings),
       });
       setPlan(res);
+      track({ name: 'plan_generated', props: { goal, provider: res.meta.provider, readiness: readinessFrom(recovery) } });
     } catch (e) {
       setPlanError(e instanceof Error ? e.message : String(e));
     } finally {

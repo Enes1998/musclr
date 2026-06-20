@@ -406,8 +406,8 @@ The full phased plan lives in `~/.claude/plans/finish-this-app-for-async-rossum.
 3. ✅ **Live AI** — AI-SDK provider packages installed; BYO-key **Settings** screen (web `/settings` + mobile Settings tab) with provider/model/key/local-URL + "Test connection"; rate-limit + optional Supabase-JWT/Turnstile anti-abuse on the relay. Set keys per `docs/CREDENTIALS.md`; the keyless mock still works for dev.
 4. ✅ **Accounts + sync** — Supabase Auth (email; Apple/Google/anonymous ready) + per-user document sync over Supabase Postgres with **RLS** (backup/restore + auto-backup; last-write-wins). Local-first: fully usable signed-out. Configure via `backend/supabase/schema.sql` + `docs/CREDENTIALS.md` §3. PowerSync (local SQLite, fine-grained offline conflict resolution) is the documented upgrade behind the same `@musclr/core` sync contract.
 5. 🟡 **Wearables** — the recovery-aware coaching pipeline is **live** (manual recovery + bodyweight on Summary → `computeReadiness` → AI autoregulation + nutrition; same store the adapters populate). Cloud-OAuth backend (`/api/health/*`, 5 providers) + Supabase token table are scaffolded + contract-tested. On-device (Apple Health / Health Connect) adapters + live cloud round-trips need a dev-client build + registered apps — see `docs/WEARABLES.md`.
-6. **Production hardening** — RevenueCat (subscriptions), Sentry (errors), PostHog (analytics/flags), GitHub Actions + EAS CI/CD.
-7. **Store release** — EAS build/submit to the App Store + Play Store; deploy web + backend.
+6. 🟡 **Production hardening** — GitHub Actions CI (typecheck/test/build/compile-gate) is live; shared analytics taxonomy + error telemetry (`@musclr/core`) with PostHog wired on web; `pro` entitlement model + paywall. Sentry / PostHog-RN / RevenueCat activate when their keys are set (`docs/DEPLOY.md`).
+7. 🟡 **Store release & deploy** — backend `Dockerfile` (Cloud Run), `eas.json` build/submit profiles, Vercel web setup, privacy policy + store data-safety draft, Playwright (web) + Maestro (mobile) E2E. Actual submission/deploy needs your accounts — see `docs/DEPLOY.md`.
 
 ---
 

@@ -1,0 +1,14 @@
+# Maestro native E2E smoke. Run against a running dev-client / simulator:
+#   maestro test apps/mobile/.maestro/smoke.yaml
+appId: com.musclr.app
+---
+- launchApp
+- assertVisible: 'Log your week'
+- tapOn: 'Summary'
+- assertVisible: 'Muscle load'
+- tapOn: 'Nutrition'
+- assertVisible: 'Nutrition'
+- tapOn: 'History'
+- assertVisible: 'History'
+- tapOn: 'Settings'
+- assertVisible: 'AI coach provider'

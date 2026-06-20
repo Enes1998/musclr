@@ -8,7 +8,7 @@ import { AccountSection } from '../../components/AccountSection';
 
 const PROVIDERS: { id: PlanProvider; label: string; note: string }[] = [
   { id: 'mock', label: 'Built-in (no key)', note: 'Deterministic, evidence-grounded. Works offline.' },
-  { id: 'hosted', label: 'Hosted (Gemini/Vertex)', note: 'Default cloud coach via the backend.' },
+  { id: 'hosted', label: 'Hosted (Gemini/Vertex) · Pro', note: 'Cloud coach we host — included with Pro. Built-in + BYO-key are always free.' },
   { id: 'openai', label: 'OpenAI (your key)', note: 'Bring your own OpenAI API key.' },
   { id: 'anthropic', label: 'Anthropic Claude (your key)', note: 'Bring your own Anthropic API key.' },
   { id: 'google', label: 'Google Gemini (your key)', note: 'Bring your own Google AI Studio key.' },
