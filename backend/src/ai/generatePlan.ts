@@ -65,6 +65,7 @@ export async function generatePlan(input: GenerateInput): Promise<GenerateOutput
     localBaseUrl: input.localBaseUrl,
     system,
     prompt: user,
+    schema: generatedPlanSchema,
   });
   let result = validate(raw);
   let repaired = false;
@@ -80,6 +81,7 @@ export async function generatePlan(input: GenerateInput): Promise<GenerateOutput
       localBaseUrl: input.localBaseUrl,
       system,
       prompt: fixPrompt,
+      schema: generatedPlanSchema,
     });
     result = validate(raw);
   }

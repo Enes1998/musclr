@@ -2,6 +2,7 @@ import { Hono } from 'hono';
 import { cors } from 'hono/cors';
 import { generatePlan, PlanError, type GenerateInput, type PlanProvider } from './ai/generatePlan';
 import { nutrition } from './routes/nutrition';
+import { antiAbuse } from './middleware/antiAbuse';
 import { ALLOWED_ORIGINS } from './env';
 import type { MuscleId, TrainingGoal } from '@musclr/core';
 
@@ -16,6 +17,10 @@ app.use(
 );
 
 app.get('/health', (c) => c.json({ ok: true, service: 'musclr-backend' }));
+
+// Anti-abuse on the expensive LLM routes (rate limit + optional auth/Turnstile; opt-in via env).
+app.use('/api/ai', antiAbuse());
+app.use('/api/nutrition/advice', antiAbuse());
 
 app.route('/api/nutrition', nutrition);
 

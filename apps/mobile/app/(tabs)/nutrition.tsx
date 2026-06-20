@@ -14,6 +14,7 @@ import {
 } from '@musclr/core';
 import { searchFoods, requestNutritionAdvice, type NutritionAdviceResult } from '../../lib/api';
 import { useNutritionStore } from '../../lib/nutritionStore';
+import { useSettingsStore, toAiSettings } from '../../lib/settingsStore';
 
 const LABELS: Record<NutrientKey, string> = {
   energy_kcal: 'Energy', protein_g: 'Protein', carbs_g: 'Carbs', fat_g: 'Fat', fiber_g: 'Fiber',
@@ -34,6 +35,7 @@ const round = (n: number) => (n >= 100 ? Math.round(n).toString() : n.toFixed(1)
 
 export default function NutritionScreen() {
   const { items, add, remove, clear } = useNutritionStore();
+  const settings = useSettingsStore();
   const [sex, setSex] = useState<Sex>('male');
   const [weightKg, setWeightKg] = useState(80);
   const [goal, setGoal] = useState<Goal>('maintain');
@@ -59,11 +61,14 @@ export default function NutritionScreen() {
   }
   async function getAdvice() {
     setAdvice(
-      await requestNutritionAdvice({
-        lacking: statuses.filter((s) => s.flag === 'low').map((s) => s.key),
-        overdone: statuses.filter((s) => s.flag === 'high' || s.flag === 'over_ul').map((s) => s.key),
-        unknown: statuses.filter((s) => s.flag === 'unknown').map((s) => s.key),
-      }),
+      await requestNutritionAdvice(
+        {
+          lacking: statuses.filter((s) => s.flag === 'low').map((s) => s.key),
+          overdone: statuses.filter((s) => s.flag === 'high' || s.flag === 'over_ul').map((s) => s.key),
+          unknown: statuses.filter((s) => s.flag === 'unknown').map((s) => s.key),
+        },
+        toAiSettings(settings),
+      ),
     );
   }
 

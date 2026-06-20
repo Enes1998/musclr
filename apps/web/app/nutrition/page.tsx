@@ -17,6 +17,7 @@ import {
 import { searchFoods, requestNutritionAdvice, type NutritionAdviceResult } from '../../lib/api';
 import { useNutritionStore } from '../../lib/nutritionStore';
 import { useHasHydrated } from '../../lib/store';
+import { useSettingsStore, toAiSettings } from '../../lib/settingsStore';
 
 const LABELS: Record<NutrientKey, string> = {
   energy_kcal: 'Energy', protein_g: 'Protein', carbs_g: 'Carbs', fat_g: 'Fat', fiber_g: 'Fiber',
@@ -45,6 +46,7 @@ function fmt(n: number): string {
 export default function NutritionPage() {
   const hydrated = useHasHydrated();
   const { items, add, remove, clear } = useNutritionStore();
+  const settings = useSettingsStore();
 
   const [sex, setSex] = useState<Sex>('male');
   const [weightKg, setWeightKg] = useState(80);
@@ -80,7 +82,7 @@ export default function NutritionPage() {
         overdone: statuses.filter((s) => s.flag === 'high' || s.flag === 'over_ul').map((s) => s.key),
         unknown: statuses.filter((s) => s.flag === 'unknown').map((s) => s.key),
       };
-      setAdvice(await requestNutritionAdvice(gaps));
+      setAdvice(await requestNutritionAdvice(gaps, toAiSettings(settings)));
     } catch {
       setAdvice(null);
     } finally {

@@ -10,11 +10,18 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@musclr/core": "workspace:*",
-    "hono": "^4.6.0",
+    "@ai-sdk/anthropic": "^3.0.85",
+    "@ai-sdk/google": "^3.0.83",
+    "@ai-sdk/google-vertex": "^4.0.147",
+    "@ai-sdk/openai": "^3.0.73",
+    "@ai-sdk/openai-compatible": "^2.0.51",
     "@hono/node-server": "^1.13.0",
-    "zod": "^4.0.0",
-    "tsx": "^4.19.0"
+    "@musclr/core": "workspace:*",
+    "ai": "^6.0.208",
+    "hono": "^4.6.0",
+    "jose": "^6.2.3",
+    "tsx": "^4.19.0",
+    "zod": "^4.0.0"
   },
   "devDependencies": {
     "@types/node": "^24.0.0",

@@ -1,23 +1,38 @@
 import { Hono } from 'hono';
 import { foodFromUsda, type Food, type UsdaFood, type NutrientVector, type NutrientKey } from '@musclr/core';
 import { USDA_API_KEY, OFF_USER_AGENT } from '../env';
-import { mockNutritionAdvice } from '../ai/nutritionAdvisor';
+import { generateNutritionAdvice, type AdviceProvider } from '../ai/nutritionAdvisor';
 
 export const nutrition = new Hono();
 
-// AI nutrition advice from the day's nutrient gaps (deterministic mock fallback).
+const ADVICE_PROVIDERS: AdviceProvider[] = ['mock', 'hosted', 'openai', 'anthropic', 'google', 'local'];
+
+// AI nutrition advice from the day's nutrient gaps (deterministic mock fallback; live providers opt-in).
 nutrition.post('/advice', async (c) => {
   const body = (await c.req.json().catch(() => ({}))) as {
     lacking?: NutrientKey[];
     overdone?: NutrientKey[];
     unknown?: NutrientKey[];
+    provider?: AdviceProvider;
+    model?: string;
+    byoKey?: string;
+    localBaseUrl?: string;
   };
-  const advice = mockNutritionAdvice({
-    lacking: body.lacking ?? [],
-    overdone: body.overdone ?? [],
-    unknown: body.unknown ?? [],
-  });
-  return c.json({ advice, meta: { provider: 'mock' } });
+  const provider = (ADVICE_PROVIDERS.includes(body.provider as AdviceProvider) ? body.provider : 'mock') as AdviceProvider;
+  try {
+    const { advice, provider: used, repaired } = await generateNutritionAdvice({
+      lacking: body.lacking ?? [],
+      overdone: body.overdone ?? [],
+      unknown: body.unknown ?? [],
+      provider,
+      model: typeof body.model === 'string' ? body.model : undefined,
+      byoKey: typeof body.byoKey === 'string' ? body.byoKey : undefined,
+      localBaseUrl: typeof body.localBaseUrl === 'string' ? body.localBaseUrl : undefined,
+    });
+    return c.json({ advice, meta: { provider: used, repaired } });
+  } catch (e) {
+    return c.json({ error: 'provider_error', detail: e instanceof Error ? e.message : String(e) }, 502);
+  }
 });
 
 // USDA FoodData Central food search (primary nutrient source, CC0).

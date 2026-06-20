@@ -9,6 +9,7 @@ const LINKS: [string, string][] = [
   ['/summary', 'Summary'],
   ['/nutrition', 'Nutrition'],
   ['/history', 'History'],
+  ['/settings', 'Settings'],
 ];
 
 export function NavBar() {

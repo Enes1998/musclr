@@ -13,6 +13,7 @@ import {
   type MuscleId,
 } from '@musclr/core';
 import { useWeekStore, useHasHydrated } from '../../lib/store';
+import { useSettingsStore, toAiSettings } from '../../lib/settingsStore';
 import { MuscleViewer } from '../../components/MuscleViewer';
 import { requestPlan, type PlanResponse } from '../../lib/api';
 
@@ -21,6 +22,7 @@ const GOALS: TrainingGoal[] = ['hypertrophy', 'strength', 'endurance', 'general'
 export default function SummaryPage() {
   const hydrated = useHasHydrated();
   const week = useWeekStore((s) => s.week);
+  const settings = useSettingsStore();
   const [goal, setGoal] = useState<TrainingGoal>('hypertrophy');
   const [showPrompt, setShowPrompt] = useState(false);
   const [plan, setPlan] = useState<PlanResponse | null>(null);
@@ -31,7 +33,11 @@ export default function SummaryPage() {
     setLoadingPlan(true);
     setPlanError(null);
     try {
-      const res = await requestPlan({ goal, loads: loads as Partial<Record<MuscleId, number>> });
+      const res = await requestPlan({
+        goal,
+        loads: loads as Partial<Record<MuscleId, number>>,
+        ai: toAiSettings(settings),
+      });
       setPlan(res);
     } catch (e) {
       setPlanError(e instanceof Error ? e.message : String(e));
@@ -112,8 +118,11 @@ export default function SummaryPage() {
           The coach is grounded only in a versioned, citable evidence module (v
           {EVIDENCE_MODULE.moduleVersion}; {EVIDENCE_MODULE.principles.length} principles,{' '}
           {EVIDENCE_MODULE.citations.length} sources) and must keep prescriptions within cited
-          bounds. The live model call runs through the backend AI relay (pending) — below is the
-          exact grounded prompt that will be sent.
+          bounds. The model runs through the backend AI relay — pick a provider in{' '}
+          <a href="/settings" className="text-accent underline">
+            Settings
+          </a>{' '}
+          (built-in works with no key). Below is the exact grounded prompt that is sent.
         </p>
         <div className="mt-4 flex flex-wrap gap-2">
           <button

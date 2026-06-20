@@ -5,8 +5,8 @@
 //     @ai-sdk/google @ai-sdk/openai-compatible
 // All routes call the SAME generateObject(generatedPlanSchema, ...) so output is uniform.
 
-import { generatedPlanSchema } from '@musclr/core';
-import { VERTEX_PROJECT, VERTEX_LOCATION } from '../env';
+import type { ZodType } from 'zod';
+import { VERTEX_PROJECT, VERTEX_LOCATION, MODEL_DEFAULTS, LOCAL_BASE_URL } from '../env';
 
 export type ModelProvider = 'hosted' | 'openai' | 'anthropic' | 'google' | 'local';
 
@@ -28,6 +28,8 @@ export interface CallModelOptions {
   localBaseUrl?: string;
   system: string;
   prompt: string;
+  /** Output schema the model must satisfy (workout plan, nutrition advice, …). */
+  schema: ZodType;
 }
 
 /** Build the provider model + run structured generation. Returns the (unvalidated) object. */
@@ -40,39 +42,44 @@ export async function callModel(o: CallModelOptions): Promise<unknown> {
       if (!VERTEX_PROJECT) throw new Error('GOOGLE_VERTEX_PROJECT is not set for the hosted provider.');
       const m = await dyn('@ai-sdk/google-vertex');
       model = m.createVertex({ project: VERTEX_PROJECT, location: VERTEX_LOCATION })(
-        o.model ?? 'gemini-2.5-flash',
+        o.model ?? MODEL_DEFAULTS.hosted,
       );
       break;
     }
     case 'openai': {
+      if (!o.byoKey) throw new Error('An OpenAI API key is required (provide it in Settings).');
       const m = await dyn('@ai-sdk/openai');
-      model = m.createOpenAI({ apiKey: o.byoKey })(o.model ?? 'gpt-4o-2024-08-06');
+      model = m.createOpenAI({ apiKey: o.byoKey })(o.model ?? MODEL_DEFAULTS.openai);
       break;
     }
     case 'anthropic': {
+      if (!o.byoKey) throw new Error('An Anthropic API key is required (provide it in Settings).');
       const m = await dyn('@ai-sdk/anthropic');
-      model = m.createAnthropic({ apiKey: o.byoKey })(o.model ?? 'claude-sonnet-4-5');
+      model = m.createAnthropic({ apiKey: o.byoKey })(o.model ?? MODEL_DEFAULTS.anthropic);
       break;
     }
     case 'google': {
+      if (!o.byoKey) throw new Error('A Google AI (Gemini) API key is required (provide it in Settings).');
       const m = await dyn('@ai-sdk/google');
-      model = m.createGoogleGenerativeAI({ apiKey: o.byoKey })(o.model ?? 'gemini-2.5-flash');
+      model = m.createGoogleGenerativeAI({ apiKey: o.byoKey })(o.model ?? MODEL_DEFAULTS.google);
       break;
     }
     case 'local': {
       const m = await dyn('@ai-sdk/openai-compatible');
       model = m
-        .createOpenAICompatible({ name: 'local', baseURL: o.localBaseUrl ?? 'http://localhost:11434/v1' })
-        .chatModel(o.model ?? 'llama3.1');
+        .createOpenAICompatible({ name: 'local', baseURL: o.localBaseUrl ?? LOCAL_BASE_URL })
+        .chatModel(o.model ?? MODEL_DEFAULTS.local);
       break;
     }
   }
 
+  // Low temperature for structured, on-spec output.
   const { object } = await ai.generateObject({
     model,
-    schema: generatedPlanSchema,
+    schema: o.schema,
     system: o.system,
     prompt: o.prompt,
+    temperature: 0.3,
   });
   return object;
 }

@@ -10,6 +10,7 @@ import {
   type TrainingGoal,
 } from '@musclr/core';
 import { useWeekStore } from '../../lib/store';
+import { useSettingsStore, toAiSettings } from '../../lib/settingsStore';
 import { MuscleHeatmap } from '../../components/MuscleHeatmap';
 import { requestPlan, type PlanResponse } from '../../lib/api';
 
@@ -17,6 +18,7 @@ const GOALS: TrainingGoal[] = ['hypertrophy', 'strength', 'endurance', 'general'
 
 export default function SummaryScreen() {
   const week = useWeekStore((s) => s.week);
+  const settings = useSettingsStore();
   const [goal, setGoal] = useState<TrainingGoal>('hypertrophy');
   const [plan, setPlan] = useState<PlanResponse | null>(null);
   const [loading, setLoading] = useState(false);
@@ -32,7 +34,7 @@ export default function SummaryScreen() {
     setLoading(true);
     setError(null);
     try {
-      setPlan(await requestPlan({ goal, loads: loads as Partial<Record<MuscleId, number>> }));
+      setPlan(await requestPlan({ goal, loads: loads as Partial<Record<MuscleId, number>>, ai: toAiSettings(settings) }));
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e));
     } finally {

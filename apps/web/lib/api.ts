@@ -2,11 +2,45 @@ import type { Food, GeneratedPlan, MuscleId, TrainingGoal } from '@musclr/core';
 
 const BASE = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8787';
 
+export type PlanProvider = 'mock' | 'hosted' | 'openai' | 'anthropic' | 'google' | 'local';
+
+/** AI provider settings chosen by the user (Settings page). Sent per-request; never persisted server-side. */
+export interface AiSettings {
+  provider: PlanProvider;
+  model?: string;
+  byoKey?: string;
+  localBaseUrl?: string;
+}
+
+function aiBody(ai?: AiSettings): Record<string, unknown> {
+  if (!ai || ai.provider === 'mock') return { provider: 'mock' };
+  return {
+    provider: ai.provider,
+    ...(ai.model ? { model: ai.model } : {}),
+    ...(ai.byoKey ? { byoKey: ai.byoKey } : {}),
+    ...(ai.localBaseUrl ? { localBaseUrl: ai.localBaseUrl } : {}),
+  };
+}
+
+const HEADERS = { 'Content-Type': 'application/json', 'x-musclr-platform': 'web' };
+
 export async function searchFoods(q: string): Promise<Food[]> {
   const res = await fetch(`${BASE}/api/nutrition/search?q=${encodeURIComponent(q)}`);
   if (!res.ok) throw new Error(`Food search failed (HTTP ${res.status})`);
   const data = (await res.json()) as { foods: Food[] };
   return data.foods;
+}
+
+export interface BarcodeResult {
+  found: boolean;
+  food?: Food;
+}
+
+export async function lookupBarcode(code: string): Promise<BarcodeResult> {
+  const res = await fetch(`${BASE}/api/nutrition/barcode/${encodeURIComponent(code)}`);
+  if (res.status === 404) return { found: false };
+  if (!res.ok) throw new Error(`Barcode lookup failed (HTTP ${res.status})`);
+  return res.json() as Promise<BarcodeResult>;
 }
 
 export interface NutritionAdviceResult {
@@ -15,18 +49,17 @@ export interface NutritionAdviceResult {
     focus: { nutrient: string; direction: 'increase' | 'decrease'; foods: string[]; citations: string[] }[];
     citations: string[];
   };
-  meta: { provider: string };
+  meta: { provider: string; repaired?: boolean };
 }
 
-export async function requestNutritionAdvice(gaps: {
-  lacking: string[];
-  overdone: string[];
-  unknown: string[];
-}): Promise<NutritionAdviceResult> {
+export async function requestNutritionAdvice(
+  gaps: { lacking: string[]; overdone: string[]; unknown: string[] },
+  ai?: AiSettings,
+): Promise<NutritionAdviceResult> {
   const res = await fetch(`${BASE}/api/nutrition/advice`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(gaps),
+    headers: HEADERS,
+    body: JSON.stringify({ ...gaps, ...aiBody(ai) }),
   });
   if (!res.ok) throw new Error(`Nutrition advice failed (HTTP ${res.status})`);
   return res.json() as Promise<NutritionAdviceResult>;
@@ -41,12 +74,13 @@ export async function requestPlan(body: {
   goal: TrainingGoal;
   loads: Partial<Record<MuscleId, number>>;
   nutrition?: { lacking: string[]; overdone: string[]; unknown: string[] };
-  provider?: string;
+  ai?: AiSettings;
 }): Promise<PlanResponse> {
+  const { ai, ...rest } = body;
   const res = await fetch(`${BASE}/api/ai`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(body),
+    headers: HEADERS,
+    body: JSON.stringify({ ...rest, ...aiBody(ai) }),
   });
   if (!res.ok) {
     const err = (await res.json().catch(() => ({}))) as { error?: string; issues?: string[] };

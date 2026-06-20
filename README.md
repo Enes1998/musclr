@@ -361,7 +361,7 @@ The 8 original product asks, mapped to reality (all built features are **verifie
 | 2 | 3D model showing under/over-trained muscles | ✅ Web (live WebGL) · ✅ mobile via WebView (the **real** three.js viewer + segmented GLB, inlined into one offline `viewer.html`) |
 | 3 | Model split per medical anatomy | ✅ ~42-muscle **taxonomy** + a **segmented ~40-muscle GLB** (one named mesh per leaf, `m_<leafId>`) generated in-repo by `scripts/build-muscle-model.mjs` — first-party (no external/CC-BY-SA asset); the heatmap colors individual heads (e.g. anterior vs. lateral delt) |
 | 4 | Exercises matched to muscles | ✅ 865 exercises crosswalked to the taxonomy |
-| 5 | AI for ChatGPT/Claude/Gemini keys + local + default hosted | ✅ Gateway + relay; deterministic mock works now; live providers need keys/Vertex |
+| 5 | AI for ChatGPT/Claude/Gemini keys + local + default hosted | ✅ Gateway + relay with the AI-SDK provider packages installed; BYO-key **Settings** UI on web + mobile (key in `expo-secure-store` on device); deterministic mock works keyless; anti-abuse (rate-limit + optional Supabase-JWT/Turnstile) on the LLM routes |
 | 6 | Suggestions based ONLY on scientific evidence | ✅ Evidence module + grounding + guardrails |
 | 7 | Macro + micro tracker | ✅ USDA-backed search, macros + ~20 micros vs DRI targets |
 | 8 | AI nutrition advice (lacking/overdone) | ✅ Gap-driven advice with food sources |
@@ -403,7 +403,7 @@ The full phased plan lives in `~/.claude/plans/finish-this-app-for-async-rossum.
 
 1. ✅ **Real 3D viewer for mobile** — `viewer3d` is bundled (esbuild) into a single offline `viewer.html` (three.js + GLB inlined as base64) replacing the placeholder; on-demand render + WebGL context-loss recovery for iOS. Regenerate: `pnpm --filter @musclr/viewer3d build:viewer`. *(On-device visual check still recommended.)*
 2. ✅ **Anatomically-segmented GLB** — a ~40-muscle model (one named mesh per taxonomy leaf) is generated in-repo by `scripts/build-muscle-model.mjs` (`pnpm --filter @musclr/viewer3d build:model`), replacing the 10-region prototype. A vitest drift-guard ties the model ↔ the taxonomy. First-party geometry → no CC-BY-SA obligation.
-3. **Live AI** — install the AI-SDK provider packages, wire BYO-key UI + a default Vertex project.
+3. ✅ **Live AI** — AI-SDK provider packages installed; BYO-key **Settings** screen (web `/settings` + mobile Settings tab) with provider/model/key/local-URL + "Test connection"; rate-limit + optional Supabase-JWT/Turnstile anti-abuse on the relay. Set keys per `docs/CREDENTIALS.md`; the keyless mock still works for dev.
 4. **Accounts + sync** — Supabase (Postgres + Auth) + PowerSync for offline-first multi-device sync.
 5. **Wearables** — Apple Health + Health Connect (on-device), then Whoop/Garmin/Fitbit/Oura (cloud OAuth via the backend).
 6. **Production hardening** — RevenueCat (subscriptions), Sentry (errors), PostHog (analytics/flags), GitHub Actions + EAS CI/CD.
