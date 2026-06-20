@@ -6,13 +6,20 @@ import * as THREE from 'three';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import { scoreToColor, type MuscleId } from '@musclr/core';
-import { LEGACY_REGION_MAP, type MeshMuscleMap } from './meshMap';
+import { musclesForMesh, type MeshMuscleMap } from './meshMap';
 
 export interface MuscleViewerOptions {
   modelUrl: string;
+  /** Optional override map (name → groups). Defaults to taxonomy-driven resolution + legacy fallback. */
   meshMap?: MeshMuscleMap;
   autoRotate?: boolean;
   background?: number | null; // null = transparent
+  /**
+   * Render only when something changes (model load, score update, user interaction, resize) instead
+   * of a continuous RAF loop. Saves battery/GPU for a mostly-static heatmap — recommended in the
+   * mobile WebView. Forces autoRotate off (continuous rotation needs a loop). Default: false (web).
+   */
+  renderOnDemand?: boolean;
 }
 
 export interface MuscleViewerHandle {
@@ -43,8 +50,9 @@ export function createMuscleViewer(
   container: HTMLElement,
   options: MuscleViewerOptions,
 ): MuscleViewerHandle {
-  const meshMap = options.meshMap ?? LEGACY_REGION_MAP;
-  const autoRotate = options.autoRotate ?? true;
+  const meshMap = options.meshMap;
+  const renderOnDemand = options.renderOnDemand ?? false;
+  const autoRotate = renderOnDemand ? false : (options.autoRotate ?? true);
 
   const scene = new THREE.Scene();
   if (options.background != null) scene.background = new THREE.Color(options.background);
@@ -55,7 +63,12 @@ export function createMuscleViewer(
   const camera = new THREE.PerspectiveCamera(35, width / height, 0.1, 100);
   camera.position.set(0, 0, 3.6);
 
-  const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: options.background == null });
+  const renderer = new THREE.WebGLRenderer({
+    antialias: true,
+    alpha: options.background == null,
+    powerPreference: 'low-power',
+  });
+  // Cap DPR — 2 is plenty and keeps the WebView lighter on dense mobile screens.
   renderer.setPixelRatio(Math.min(globalThis.devicePixelRatio || 1, 2));
   renderer.setSize(width, height, false);
   renderer.shadowMap.enabled = true;
@@ -77,16 +90,24 @@ export function createMuscleViewer(
   const controls = new OrbitControls(camera, renderer.domElement);
   controls.enableZoom = false;
   controls.enablePan = false;
-  controls.enableDamping = true;
+  controls.enableDamping = !renderOnDemand; // damping needs a continuous loop to settle
   controls.autoRotate = autoRotate;
   controls.autoRotateSpeed = 1.2;
 
   const meshes: THREE.Mesh[] = [];
   let pendingScores: Partial<Record<MuscleId, number>> | null = null;
+  let lastScores: Partial<Record<MuscleId, number>> = {};
+  let contextLost = false;
+
+  function renderOnce(): void {
+    if (contextLost) return;
+    renderer.render(scene, camera);
+  }
 
   function applyScores(scores: Partial<Record<MuscleId, number>>): void {
+    lastScores = scores;
     for (const mesh of meshes) {
-      const muscles = meshMap[mesh.name];
+      const muscles = musclesForMesh(mesh.name, meshMap);
       const old = mesh.material as THREE.Material | THREE.Material[];
       if (!muscles || muscles.length === 0) {
         mesh.material = new THREE.MeshStandardMaterial({
@@ -101,6 +122,25 @@ export function createMuscleViewer(
       if (Array.isArray(old)) old.forEach((m) => m.dispose());
       else old?.dispose();
     }
+    if (renderOnDemand) renderOnce();
+  }
+
+  // Recenter the model to the origin and frame the camera from its bounding sphere, so any model
+  // (10-region legacy or segmented anatomy) is correctly framed without magic offsets.
+  function frameModel(model: THREE.Object3D): void {
+    const box = new THREE.Box3().setFromObject(model);
+    const center = box.getCenter(new THREE.Vector3());
+    model.position.sub(center); // recenter to origin
+    const sphere = box.getBoundingSphere(new THREE.Sphere());
+    const r = sphere.radius || 1;
+    const fov = (camera.fov * Math.PI) / 180;
+    const dist = (r / Math.sin(fov / 2)) * 1.08; // small margin
+    camera.position.set(0, 0, dist);
+    camera.near = Math.max(0.01, dist - r * 2);
+    camera.far = dist + r * 2;
+    camera.updateProjectionMatrix();
+    controls.target.set(0, 0, 0);
+    controls.update();
   }
 
   const loader = new GLTFLoader();
@@ -108,7 +148,6 @@ export function createMuscleViewer(
     options.modelUrl,
     (gltf) => {
       const model = gltf.scene;
-      model.position.set(0, -0.7, 0);
       model.traverse((node) => {
         if ((node as THREE.Mesh).isMesh) {
           const mesh = node as THREE.Mesh;
@@ -118,7 +157,9 @@ export function createMuscleViewer(
         }
       });
       scene.add(model);
+      frameModel(model);
       applyScores(pendingScores ?? {});
+      if (renderOnDemand) renderOnce();
     },
     undefined,
     (err) => {
@@ -127,13 +168,37 @@ export function createMuscleViewer(
     },
   );
 
+  // --- Render loop (continuous) or on-demand rendering ---
   let raf = 0;
   const tick = () => {
     raf = requestAnimationFrame(tick);
+    if (contextLost) return;
     controls.update();
     renderer.render(scene, camera);
   };
-  tick();
+  if (!renderOnDemand) {
+    tick();
+  } else {
+    controls.addEventListener('change', renderOnce);
+  }
+
+  // --- WebGL context loss/restore (iOS WKWebView drops the GL context on backgrounding) ---
+  const canvas = renderer.domElement;
+  const onContextLost = (e: Event) => {
+    e.preventDefault();
+    contextLost = true;
+    if (raf) cancelAnimationFrame(raf);
+    raf = 0;
+  };
+  const onContextRestored = () => {
+    contextLost = false;
+    // three rebuilds GL programs lazily on the next render; reapply current scores + resume.
+    applyScores(lastScores);
+    if (!renderOnDemand) tick();
+    else renderOnce();
+  };
+  canvas.addEventListener('webglcontextlost', onContextLost, false);
+  canvas.addEventListener('webglcontextrestored', onContextRestored, false);
 
   const resize = () => {
     const w = container.clientWidth || 1;
@@ -141,6 +206,7 @@ export function createMuscleViewer(
     camera.aspect = w / h;
     camera.updateProjectionMatrix();
     renderer.setSize(w, h, false);
+    if (renderOnDemand) renderOnce();
   };
   const ro = typeof ResizeObserver !== 'undefined' ? new ResizeObserver(resize) : null;
   ro?.observe(container);
@@ -152,8 +218,11 @@ export function createMuscleViewer(
     },
     resize,
     dispose() {
-      cancelAnimationFrame(raf);
+      if (raf) cancelAnimationFrame(raf);
       ro?.disconnect();
+      controls.removeEventListener('change', renderOnce);
+      canvas.removeEventListener('webglcontextlost', onContextLost);
+      canvas.removeEventListener('webglcontextrestored', onContextRestored);
       controls.dispose();
       scene.traverse((node) => {
         const mesh = node as THREE.Mesh;

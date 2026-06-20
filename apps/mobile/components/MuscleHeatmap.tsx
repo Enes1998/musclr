@@ -6,9 +6,10 @@ import type { MuscleId } from '@musclr/core';
 
 // The 3D muscle heatmap is hosted in a self-contained offline HTML page (assets/viewer.html) so
 // one implementation runs identically on iOS + Android (and matches the web app's renderer). The
-// HTML defines `window.__viewer.setScores({muscleId: 0..100})` and posts `{type:'ready'}` back.
-// NOTE: the bundled viewer.html is a lightweight offline heatmap; the full three.js + GLB
-// single-file build (vite-plugin-singlefile, GLB inlined) is the M4 upgrade — drop-in, same bridge.
+// HTML is the REAL three.js viewer (`@musclr/viewer3d`) with the segmented anatomical GLB inlined
+// as base64 — built by `scripts/build-mobile-viewer.mjs` (esbuild). It defines
+// `window.__viewer.setScores({muscleId: 0..100})` and posts `{type:'ready'}` back. Regenerate with
+// `pnpm --filter @musclr/viewer3d build:3d` whenever the model or viewer changes.
 const HTML = require('../assets/viewer.html');
 
 export function MuscleHeatmap({ scores }: { scores: Partial<Record<MuscleId, number>> }) {

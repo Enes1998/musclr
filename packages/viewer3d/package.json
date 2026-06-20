@@ -9,13 +9,20 @@
     ".": "./src/index.ts"
   },
   "scripts": {
-    "typecheck": "tsc --noEmit"
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "typecheck": "tsc --noEmit",
+    "build:model": "node ../../scripts/build-muscle-model.mjs",
+    "build:viewer": "node ../../scripts/build-mobile-viewer.mjs",
+    "build:3d": "pnpm build:model && pnpm build:viewer"
   },
   "dependencies": {
     "@musclr/core": "workspace:*",
     "three": "^0.184.0"
   },
   "devDependencies": {
-    "typescript": "~6.0.0"
+    "esbuild": "^0.25.0",
+    "typescript": "~6.0.0",
+    "vitest": "^3.0.0"
   }
 }

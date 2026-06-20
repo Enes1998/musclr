@@ -182,6 +182,16 @@ The 865-exercise dataset is generated from the public-domain `free-exercise-db`:
 node scripts/build-exercise-catalog.mjs   # rewrites packages/core/src/data/exerciseCatalog.generated.ts
 ```
 
+### Regenerating the 3D muscle model + mobile viewer
+
+The segmented ~40-muscle model is generated from the `@musclr/core` taxonomy (no external asset):
+```bash
+pnpm --filter @musclr/viewer3d build:model   # → packages/viewer3d/model/model.glb + apps/web/public/model.glb (+ manifest)
+pnpm --filter @musclr/viewer3d build:viewer  # → apps/mobile/assets/viewer.html (three.js + GLB inlined, offline)
+pnpm --filter @musclr/viewer3d build:3d      # both, in order
+```
+Run `build:3d` whenever you change the muscle taxonomy (`packages/core/src/muscles.ts`) or the viewer (`packages/viewer3d/src/`). The vitest drift-guard (`packages/viewer3d/src/meshMap.test.ts`) fails CI if the model and taxonomy diverge.
+
 ---
 
 ## 5. Environment variables
@@ -348,8 +358,8 @@ The 8 original product asks, mapped to reality (all built features are **verifie
 | # | Feature | Status |
 |---|---|---|
 | 1 | Exercise tracking (iOS/Android/web) | ✅ Web done · 📱 Mobile screens built + compiling |
-| 2 | 3D model showing under/over-trained muscles | ✅ Web (live WebGL) · 📱 mobile via WebView (placeholder heatmap until #3 lands) |
-| 3 | Model split per medical anatomy | 🟡 ~42-muscle **taxonomy** done; the **segmented GLB asset** is still the 10-region prototype model (Blender work pending) |
+| 2 | 3D model showing under/over-trained muscles | ✅ Web (live WebGL) · ✅ mobile via WebView (the **real** three.js viewer + segmented GLB, inlined into one offline `viewer.html`) |
+| 3 | Model split per medical anatomy | ✅ ~42-muscle **taxonomy** + a **segmented ~40-muscle GLB** (one named mesh per leaf, `m_<leafId>`) generated in-repo by `scripts/build-muscle-model.mjs` — first-party (no external/CC-BY-SA asset); the heatmap colors individual heads (e.g. anterior vs. lateral delt) |
 | 4 | Exercises matched to muscles | ✅ 865 exercises crosswalked to the taxonomy |
 | 5 | AI for ChatGPT/Claude/Gemini keys + local + default hosted | ✅ Gateway + relay; deterministic mock works now; live providers need keys/Vertex |
 | 6 | Suggestions based ONLY on scientific evidence | ✅ Evidence module + grounding + guardrails |
@@ -391,8 +401,8 @@ The 8 original product asks, mapped to reality (all built features are **verifie
 
 The full phased plan lives in `~/.claude/plans/finish-this-app-for-async-rossum.md`. Near-term, highest-leverage items:
 
-1. **Real 3D viewer for mobile** — bundle `viewer3d` into a single offline `viewer.html` (three.js + GLB inlined) to replace the placeholder heatmap; verify on a device.
-2. **Anatomically-segmented GLB** — replace the 10-region model with the ~40-muscle model the taxonomy already supports (Blender pipeline).
+1. ✅ **Real 3D viewer for mobile** — `viewer3d` is bundled (esbuild) into a single offline `viewer.html` (three.js + GLB inlined as base64) replacing the placeholder; on-demand render + WebGL context-loss recovery for iOS. Regenerate: `pnpm --filter @musclr/viewer3d build:viewer`. *(On-device visual check still recommended.)*
+2. ✅ **Anatomically-segmented GLB** — a ~40-muscle model (one named mesh per taxonomy leaf) is generated in-repo by `scripts/build-muscle-model.mjs` (`pnpm --filter @musclr/viewer3d build:model`), replacing the 10-region prototype. A vitest drift-guard ties the model ↔ the taxonomy. First-party geometry → no CC-BY-SA obligation.
 3. **Live AI** — install the AI-SDK provider packages, wire BYO-key UI + a default Vertex project.
 4. **Accounts + sync** — Supabase (Postgres + Auth) + PowerSync for offline-first multi-device sync.
 5. **Wearables** — Apple Health + Health Connect (on-device), then Whoop/Garmin/Fitbit/Oura (cloud OAuth via the backend).

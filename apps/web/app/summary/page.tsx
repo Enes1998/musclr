@@ -187,8 +187,8 @@ export default function SummaryPage() {
       </section>
 
       <p className="mt-6 font-mono text-xs text-ink-3">
-        3D anatomical heatmap renders here via the shared three.js viewer (web + mobile WebView) —
-        wiring in progress.
+        Anatomically segmented 3D heatmap (~40 muscles) rendered by the shared three.js viewer — the
+        same renderer drives the iOS/Android app via an offline WebView.
       </p>
     </main>
   );
