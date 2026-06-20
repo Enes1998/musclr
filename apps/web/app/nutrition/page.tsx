@@ -14,10 +14,11 @@ import {
   type Sex,
   type Goal,
 } from '@musclr/core';
-import { searchFoods, requestNutritionAdvice, type NutritionAdviceResult } from '../../lib/api';
+import { searchFoods, requestNutritionAdvice, lookupBarcode, type NutritionAdviceResult } from '../../lib/api';
 import { useNutritionStore } from '../../lib/nutritionStore';
 import { useHasHydrated } from '../../lib/store';
 import { useSettingsStore, toAiSettings } from '../../lib/settingsStore';
+import { BarcodeScanner } from '../../components/BarcodeScanner';
 
 const LABELS: Record<NutrientKey, string> = {
   energy_kcal: 'Energy', protein_g: 'Protein', carbs_g: 'Carbs', fat_g: 'Fat', fiber_g: 'Fiber',
@@ -56,6 +57,10 @@ export default function NutritionPage() {
   const [results, setResults] = useState<Food[]>([]);
   const [searching, setSearching] = useState(false);
   const [searchError, setSearchError] = useState<string | null>(null);
+
+  const [scanning, setScanning] = useState(false);
+  const [scanMsg, setScanMsg] = useState<string | null>(null);
+  const [showManual, setShowManual] = useState(false);
 
   const [advice, setAdvice] = useState<NutritionAdviceResult | null>(null);
   const [adviceLoading, setAdviceLoading] = useState(false);
@@ -100,6 +105,23 @@ export default function NutritionPage() {
       setSearchError(e instanceof Error ? e.message : String(e));
     } finally {
       setSearching(false);
+    }
+  }
+
+  async function handleBarcode(code: string) {
+    setScanning(false);
+    setScanMsg('Looking up…');
+    try {
+      const res = await lookupBarcode(code);
+      if (res.found && res.food) {
+        add(res.food, 100);
+        setScanMsg(`Added ${res.food.name} (100 g).`);
+      } else {
+        setScanMsg(`No product for ${code}. Try search or add it manually below.`);
+        setShowManual(true);
+      }
+    } catch (e) {
+      setScanMsg(e instanceof Error ? e.message : String(e));
     }
   }
 
@@ -157,8 +179,36 @@ export default function NutritionPage() {
         <button onClick={runSearch} disabled={searching} className="rounded-md bg-accent px-3 py-2 text-sm font-medium text-bg disabled:opacity-50">
           {searching ? '…' : 'Search'}
         </button>
+        <button
+          onClick={() => {
+            setScanMsg(null);
+            setScanning((v) => !v);
+          }}
+          className="rounded-md bg-surface-2 px-3 py-2 text-sm hover:bg-surface-3"
+        >
+          {scanning ? 'Stop' : '⬚ Scan'}
+        </button>
       </div>
       {searchError && <p className="mb-3 text-sm text-load-over">⚠ {searchError}</p>}
+      {scanning && <BarcodeScanner onDetected={handleBarcode} onClose={() => setScanning(false)} />}
+      {scanMsg && <p className="mb-3 mt-2 text-sm text-ink-2">{scanMsg}</p>}
+      <div className="mb-4">
+        <button
+          onClick={() => setShowManual((v) => !v)}
+          className="font-mono text-xs text-ink-3 hover:text-ink"
+        >
+          {showManual ? '− Hide manual entry' : '+ Add a food manually'}
+        </button>
+        {showManual && (
+          <ManualFoodForm
+            onAdd={(food, grams) => {
+              add(food, grams);
+              setShowManual(false);
+              setScanMsg(`Added ${food.name} (${grams} g).`);
+            }}
+          />
+        )}
+      </div>
       {results.length > 0 && (
         <ul className="mb-6 divide-y divide-line/60 overflow-hidden rounded-xl border border-line bg-surface">
           {results.map((f) => (
@@ -279,5 +329,74 @@ export default function NutritionPage() {
         )}
       </section>
     </main>
+  );
+}
+
+/** Manual custom-food entry (fallback when a barcode isn't found or for home-cooked foods). */
+function ManualFoodForm({ onAdd }: { onAdd: (food: Food, grams: number) => void }) {
+  const [name, setName] = useState('');
+  const [grams, setGrams] = useState(100);
+  const [kcal, setKcal] = useState(0);
+  const [protein, setProtein] = useState(0);
+  const [carbs, setCarbs] = useState(0);
+  const [fat, setFat] = useState(0);
+
+  const num = (v: number, set: (n: number) => void, label: string) => (
+    <label className="flex flex-col gap-1">
+      <span className="font-mono text-xs text-ink-3">{label}</span>
+      <input
+        type="number"
+        value={v}
+        onChange={(e) => set(Number(e.target.value) || 0)}
+        className="w-20 rounded bg-surface-2 px-2 py-1 text-sm"
+      />
+    </label>
+  );
+
+  function submit() {
+    if (!name.trim() || grams <= 0) return;
+    const scale = 100 / grams; // entered values are per the serving; store per-100g
+    const food: Food = {
+      id: `custom:${name.trim().toLowerCase()}:${Date.now()}`,
+      source: 'custom',
+      name: name.trim(),
+      per100: {
+        energy_kcal: kcal * scale,
+        protein_g: protein * scale,
+        carbs_g: carbs * scale,
+        fat_g: fat * scale,
+      },
+      servings: [{ id: 'serving', label: `${grams} g`, grams }],
+      defaultServingId: 'serving',
+      dataCompleteness: 0,
+    };
+    onAdd(food, grams);
+  }
+
+  return (
+    <div className="mt-3 rounded-xl border border-line bg-bg-2 p-3">
+      <div className="flex flex-wrap items-end gap-3">
+        <label className="flex flex-1 flex-col gap-1">
+          <span className="font-mono text-xs text-ink-3">Food name</span>
+          <input
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            placeholder="e.g. homemade chili"
+            className="rounded bg-surface-2 px-2 py-1 text-sm"
+          />
+        </label>
+        {num(grams, setGrams, 'Serving (g)')}
+        {num(kcal, setKcal, 'kcal')}
+        {num(protein, setProtein, 'Protein')}
+        {num(carbs, setCarbs, 'Carbs')}
+        {num(fat, setFat, 'Fat')}
+        <button onClick={submit} className="rounded-md bg-accent px-3 py-2 text-sm font-medium text-bg">
+          Add
+        </button>
+      </div>
+      <p className="mt-2 font-mono text-xs text-ink-3">
+        Macros for the serving you enter. Micronutrients stay “unknown” (not zero) — never counted as a deficiency.
+      </p>
+    </div>
   );
 }

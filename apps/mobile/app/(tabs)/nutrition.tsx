@@ -12,9 +12,10 @@ import {
   type Sex,
   type Goal,
 } from '@musclr/core';
-import { searchFoods, requestNutritionAdvice, type NutritionAdviceResult } from '../../lib/api';
+import { searchFoods, requestNutritionAdvice, lookupBarcode, type NutritionAdviceResult } from '../../lib/api';
 import { useNutritionStore } from '../../lib/nutritionStore';
 import { useSettingsStore, toAiSettings } from '../../lib/settingsStore';
+import { BarcodeScanner } from '../../components/BarcodeScanner';
 
 const LABELS: Record<NutrientKey, string> = {
   energy_kcal: 'Energy', protein_g: 'Protein', carbs_g: 'Carbs', fat_g: 'Fat', fiber_g: 'Fiber',
@@ -43,6 +44,9 @@ export default function NutritionScreen() {
   const [results, setResults] = useState<Food[]>([]);
   const [searching, setSearching] = useState(false);
   const [advice, setAdvice] = useState<NutritionAdviceResult | null>(null);
+  const [scanning, setScanning] = useState(false);
+  const [scanMsg, setScanMsg] = useState<string | null>(null);
+  const [showManual, setShowManual] = useState(false);
 
   const profile: NutritionProfile = { sex, age: 30, heightCm: 180, weightKg, activity: 'moderate', goal };
   const targets = useMemo(() => deriveTargets(profile), [sex, weightKg, goal]);
@@ -57,6 +61,21 @@ export default function NutritionScreen() {
       setResults(await searchFoods(query));
     } finally {
       setSearching(false);
+    }
+  }
+  async function handleBarcode(code: string) {
+    setScanning(false);
+    setScanMsg('Looking up…');
+    try {
+      const res = await lookupBarcode(code);
+      if (res.found && res.food) {
+        add(res.food, 100);
+        setScanMsg(`Added ${res.food.name} (100 g).`);
+      } else {
+        setScanMsg(`No product for ${code}. Try search instead.`);
+      }
+    } catch (e) {
+      setScanMsg(e instanceof Error ? e.message : String(e));
     }
   }
   async function getAdvice() {
@@ -113,7 +132,31 @@ export default function NutritionScreen() {
         <Pressable onPress={run} disabled={searching} className="rounded-md bg-accent px-4 py-2">
           <Text className="font-medium text-bg">{searching ? '…' : 'Search'}</Text>
         </Pressable>
+        <Pressable
+          onPress={() => {
+            setScanMsg(null);
+            setScanning((v) => !v);
+          }}
+          className="rounded-md bg-surface-2 px-4 py-2"
+        >
+          <Text className="text-ink">{scanning ? 'Stop' : 'Scan'}</Text>
+        </Pressable>
       </View>
+      {scanning && <BarcodeScanner onDetected={handleBarcode} onClose={() => setScanning(false)} />}
+      {scanMsg && <Text className="mb-2 text-sm text-ink-2">{scanMsg}</Text>}
+
+      <Pressable onPress={() => setShowManual((v) => !v)} className="mb-2">
+        <Text className="font-mono text-xs text-ink-3">{showManual ? '− Hide manual entry' : '+ Add a food manually'}</Text>
+      </Pressable>
+      {showManual && (
+        <ManualFoodForm
+          onAdd={(food, grams) => {
+            add(food, grams);
+            setShowManual(false);
+            setScanMsg(`Added ${food.name} (${grams} g).`);
+          }}
+        />
+      )}
 
       {results.length > 0 && (
         <View className="mb-4 overflow-hidden rounded-xl border border-line bg-surface">
@@ -186,5 +229,75 @@ export default function NutritionScreen() {
         )}
       </View>
     </ScrollView>
+  );
+}
+
+/** Manual custom-food entry (fallback when a barcode isn't found or for home-cooked foods). */
+function ManualFoodForm({ onAdd }: { onAdd: (food: Food, grams: number) => void }) {
+  const [name, setName] = useState('');
+  const [grams, setGrams] = useState('100');
+  const [kcal, setKcal] = useState('0');
+  const [protein, setProtein] = useState('0');
+  const [carbs, setCarbs] = useState('0');
+  const [fat, setFat] = useState('0');
+
+  const field = (label: string, v: string, set: (s: string) => void, w = 'w-16') => (
+    <View>
+      <Text className="font-mono text-[10px] text-ink-3">{label}</Text>
+      <TextInput
+        value={v}
+        onChangeText={set}
+        keyboardType="numeric"
+        placeholderTextColor="#52525c"
+        className={`${w} mt-1 rounded bg-surface-2 px-2 py-1 text-sm text-ink`}
+      />
+    </View>
+  );
+
+  function submit() {
+    const g = Number(grams) || 0;
+    if (!name.trim() || g <= 0) return;
+    const scale = 100 / g;
+    const food: Food = {
+      id: `custom:${name.trim().toLowerCase()}:${Date.now()}`,
+      source: 'custom',
+      name: name.trim(),
+      per100: {
+        energy_kcal: (Number(kcal) || 0) * scale,
+        protein_g: (Number(protein) || 0) * scale,
+        carbs_g: (Number(carbs) || 0) * scale,
+        fat_g: (Number(fat) || 0) * scale,
+      },
+      servings: [{ id: 'serving', label: `${g} g`, grams: g }],
+      defaultServingId: 'serving',
+      dataCompleteness: 0,
+    };
+    onAdd(food, g);
+  }
+
+  return (
+    <View className="mb-4 rounded-xl border border-line bg-bg-2 p-3">
+      <Text className="font-mono text-[10px] text-ink-3">Food name</Text>
+      <TextInput
+        value={name}
+        onChangeText={setName}
+        placeholder="e.g. homemade chili"
+        placeholderTextColor="#52525c"
+        className="mb-2 mt-1 rounded bg-surface-2 px-2 py-1 text-sm text-ink"
+      />
+      <View className="flex-row flex-wrap gap-2">
+        {field('Serving (g)', grams, setGrams)}
+        {field('kcal', kcal, setKcal)}
+        {field('Protein', protein, setProtein)}
+        {field('Carbs', carbs, setCarbs)}
+        {field('Fat', fat, setFat)}
+      </View>
+      <Pressable onPress={submit} className="mt-3 self-start rounded-md bg-accent px-4 py-2">
+        <Text className="font-medium text-bg">Add</Text>
+      </Pressable>
+      <Text className="mt-2 font-mono text-[10px] text-ink-3">
+        Micronutrients stay “unknown” (not zero) — never counted as a deficiency.
+      </Text>
+    </View>
   );
 }

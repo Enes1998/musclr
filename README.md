@@ -368,7 +368,7 @@ The 8 original product asks, mapped to reality (all built features are **verifie
 
 **Build state:** `@musclr/core`, `@musclr/tokens`, `@musclr/viewer3d`, `apps/web` (4 routes), `backend`, and `apps/mobile` (3 screens) are all implemented, typecheck-clean, and compile. 79 unit tests pass.
 
-**Not built yet** (see [Roadmap](#14-roadmap-what-to-build-next)): the anatomically-segmented GLB; the real three.js single-file `viewer.html` for the mobile WebView; live-AI provider wiring/keys; accounts + offline-first sync (Supabase + PowerSync); wearables runtime (Apple Health / Health Connect / Whoop / Garmin / …); barcode scanner UI; production hardening (RevenueCat, Sentry, PostHog, CI/CD); store release.
+**Not built yet** (see [Roadmap](#14-roadmap-what-to-build-next)): accounts + offline-first sync (Supabase + PowerSync); wearables runtime (Apple Health / Health Connect / Whoop / Garmin / …); production hardening (RevenueCat, Sentry, PostHog, CI/CD); store release. *(Done since the original audit: the anatomically-segmented GLB, the real three.js single-file `viewer.html` for the mobile WebView, live multi-provider AI + BYO-key Settings, profile history, and the barcode scanner + manual food entry.)*
 
 ---
 
