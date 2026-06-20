@@ -10,6 +10,7 @@ export * from './palette';
 export * from './licenses';
 export * from './units';
 export * from './i18n';
+export * from './sync';
 export * from './validation';
 export * from './program';
 export * from './evidence';

@@ -4,6 +4,7 @@ import { Link } from 'expo-router';
 import { LOCALES, LOCALE_LABELS, type LoadPalette } from '@musclr/core';
 import { useSettingsStore, toAiSettings, type WeightUnit } from '../../lib/settingsStore';
 import { requestPlan, type PlanProvider } from '../../lib/api';
+import { AccountSection } from '../../components/AccountSection';
 
 const PROVIDERS: { id: PlanProvider; label: string; note: string }[] = [
   { id: 'mock', label: 'Built-in (no key)', note: 'Deterministic, evidence-grounded. Works offline.' },
@@ -146,6 +147,8 @@ export default function SettingsScreen() {
           ))}
         </View>
       </View>
+
+      <AccountSection />
 
       <Link href="/licenses" asChild>
         <Pressable className="mt-4">

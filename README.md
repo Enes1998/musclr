@@ -368,7 +368,7 @@ The 8 original product asks, mapped to reality (all built features are **verifie
 
 **Build state:** `@musclr/core`, `@musclr/tokens`, `@musclr/viewer3d`, `apps/web` (4 routes), `backend`, and `apps/mobile` (3 screens) are all implemented, typecheck-clean, and compile. 79 unit tests pass.
 
-**Not built yet** (see [Roadmap](#14-roadmap-what-to-build-next)): accounts + offline-first sync (Supabase + PowerSync); wearables runtime (Apple Health / Health Connect / Whoop / Garmin / …); production hardening (RevenueCat, Sentry, PostHog, CI/CD); store release. *(Done since the original audit: the anatomically-segmented GLB, the real three.js single-file `viewer.html` for the mobile WebView, live multi-provider AI + BYO-key Settings, profile history, and the barcode scanner + manual food entry.)*
+**Not built yet** (see [Roadmap](#14-roadmap-what-to-build-next)): wearables runtime (Apple Health / Health Connect / Whoop / Garmin / …); production hardening (RevenueCat, Sentry, PostHog, CI/CD); store release. *(Done since the original audit: segmented GLB + real three.js mobile `viewer.html`, live multi-provider AI + BYO-key Settings + anti-abuse, profile history, barcode + manual food entry, colorblind/a11y + i18n + units/RIR, and Supabase accounts + multi-device sync.)*
 
 ---
 
@@ -404,7 +404,7 @@ The full phased plan lives in `~/.claude/plans/finish-this-app-for-async-rossum.
 1. ✅ **Real 3D viewer for mobile** — `viewer3d` is bundled (esbuild) into a single offline `viewer.html` (three.js + GLB inlined as base64) replacing the placeholder; on-demand render + WebGL context-loss recovery for iOS. Regenerate: `pnpm --filter @musclr/viewer3d build:viewer`. *(On-device visual check still recommended.)*
 2. ✅ **Anatomically-segmented GLB** — a ~40-muscle model (one named mesh per taxonomy leaf) is generated in-repo by `scripts/build-muscle-model.mjs` (`pnpm --filter @musclr/viewer3d build:model`), replacing the 10-region prototype. A vitest drift-guard ties the model ↔ the taxonomy. First-party geometry → no CC-BY-SA obligation.
 3. ✅ **Live AI** — AI-SDK provider packages installed; BYO-key **Settings** screen (web `/settings` + mobile Settings tab) with provider/model/key/local-URL + "Test connection"; rate-limit + optional Supabase-JWT/Turnstile anti-abuse on the relay. Set keys per `docs/CREDENTIALS.md`; the keyless mock still works for dev.
-4. **Accounts + sync** — Supabase (Postgres + Auth) + PowerSync for offline-first multi-device sync.
+4. ✅ **Accounts + sync** — Supabase Auth (email; Apple/Google/anonymous ready) + per-user document sync over Supabase Postgres with **RLS** (backup/restore + auto-backup; last-write-wins). Local-first: fully usable signed-out. Configure via `backend/supabase/schema.sql` + `docs/CREDENTIALS.md` §3. PowerSync (local SQLite, fine-grained offline conflict resolution) is the documented upgrade behind the same `@musclr/core` sync contract.
 5. **Wearables** — Apple Health + Health Connect (on-device), then Whoop/Garmin/Fitbit/Oura (cloud OAuth via the backend).
 6. **Production hardening** — RevenueCat (subscriptions), Sentry (errors), PostHog (analytics/flags), GitHub Actions + EAS CI/CD.
 7. **Store release** — EAS build/submit to the App Store + Play Store; deploy web + backend.

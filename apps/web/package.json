@@ -12,6 +12,7 @@
     "@musclr/core": "workspace:*",
     "@musclr/tokens": "workspace:*",
     "@musclr/viewer3d": "workspace:*",
+    "@supabase/supabase-js": "^2.108.2",
     "@zxing/browser": "^0.1.5",
     "next": "^15.1.0",
     "react": "^19.2.0",

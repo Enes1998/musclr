@@ -1,0 +1,9 @@
+# PowerSync sync rules (OPTIONAL upgrade path — see backend/supabase/README.md).
+# Syncs each authenticated user only their own sync_documents rows into local SQLite. Wire a
+# PowerSync instance to the Supabase Postgres and paste these rules to enable offline-first
+# local SQLite with incremental sync. The app's @musclr/core sync contract is the integration point.
+bucket_definitions:
+  user_documents:
+    parameters: select request.user_id() as user_id
+    data:
+      - select * from sync_documents where user_id = bucket.user_id

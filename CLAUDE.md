@@ -86,6 +86,7 @@ This table is the source of truth. Both columns must be ✅ before any feature i
 | Licenses / credits | ✅ `/licenses` | ✅ `/licenses` (stack) |
 | i18n (en/es foundation) | ✅ | ✅ |
 | Units (kg/lb) + RIR logging | ✅ `/log` | ✅ Log tab |
+| Accounts + multi-device sync (Supabase) | ✅ `/settings` | ✅ Settings tab |
 
 When you add a new feature, add a row. Both cells must be ✅ before you're done.
 

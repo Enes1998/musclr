@@ -5,6 +5,7 @@ import { useSettingsStore, toAiSettings } from '../../lib/settingsStore';
 import { useHasHydrated } from '../../lib/store';
 import { requestPlan, type PlanProvider } from '../../lib/api';
 import { LOCALES, LOCALE_LABELS } from '@musclr/core';
+import { AccountSection } from '../../components/AccountSection';
 
 const PROVIDERS: { id: PlanProvider; label: string; note: string }[] = [
   { id: 'mock', label: 'Built-in (no key)', note: 'Deterministic, evidence-grounded plans. Works offline, no account.' },
@@ -184,6 +185,8 @@ export default function SettingsPage() {
           </div>
         </div>
       </section>
+
+      <AccountSection />
 
       <p className="mt-6 font-mono text-xs text-ink-3">
         Need keys? See <span className="text-ink">docs/CREDENTIALS.md</span>. ·{' '}

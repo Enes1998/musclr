@@ -6,6 +6,8 @@ import { JetBrainsMono_400Regular } from '@expo-google-fonts/jetbrains-mono';
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { useSettingsStore } from '../lib/settingsStore';
+import { useAuth } from '../lib/auth';
+import { startAutoBackup } from '../lib/sync';
 
 export default function RootLayout() {
   const [loaded] = useFonts({
@@ -18,9 +20,13 @@ export default function RootLayout() {
 
   // Hydrate the BYO AI key from the secure keychain once at startup.
   const loadKey = useSettingsStore((s) => s.loadKey);
+  const initAuth = useAuth((s) => s.init);
   useEffect(() => {
     void loadKey();
-  }, [loadKey]);
+    initAuth();
+    const stop = startAutoBackup(() => useAuth.getState().user?.id ?? null);
+    return stop;
+  }, [loadKey, initAuth]);
 
   if (!loaded) return null;
   return (
